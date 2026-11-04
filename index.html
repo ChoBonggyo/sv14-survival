@@ -806,6 +806,16 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
 .tool-links b::after{content:" ↗";color:var(--accent)}
 .tool-links span{font-size:.86rem;color:var(--muted);line-height:1.5}
 .tool-links em{font-style:normal;font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-top:auto}
+
+/* ---------- 접속 중 ---------- */
+.pill.online{color:#15803d;background:#dcfce7;border-color:#16a34a;font-weight:700}
+.pill.online::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:5px;vertical-align:1px;box-shadow:0 0 0 2px rgba(34,197,94,.25),0 0 8px #22c55e}
+@media (prefers-reduced-motion:no-preference){
+  .pill.online::before{animation:onlinePulse 1.6s ease-in-out infinite}
+  @keyframes onlinePulse{0%,100%{box-shadow:0 0 0 2px rgba(34,197,94,.25),0 0 6px #22c55e}50%{box-shadow:0 0 0 4px rgba(34,197,94,.15),0 0 12px #22c55e}}
+}
+:root[data-theme="dark"] .pill.online{color:#86efac;background:#14532d}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pill.online{color:#86efac;background:#14532d}}
 </style>
 </head>
 <body>
@@ -1436,7 +1446,9 @@ window.__SV14_BOOT = function(){
     var av = el('div', 'avatar', m.name.charAt(0));
     av.setAttribute('aria-hidden', 'true');
     var nm = el('div', 'name', m.name + ' ');
-    nm.appendChild(el('span', 'pill ' + STATUS[m.status][1], STATUS[m.status][0]));
+    var pillEl = el('span', 'pill ' + STATUS[m.status][1], STATUS[m.status][0]);
+    pillEl.setAttribute('data-online-slug', m.slug);
+    nm.appendChild(pillEl);
     a.appendChild(av);
     a.appendChild(nm);
     var home = cityFor(m.room.region);
@@ -2671,6 +2683,8 @@ window.__SV14_BOOT = function(){
     var st = document.getElementById('p-status');
     st.textContent = STATUS[m.status][0];
     st.className = 'pill ' + STATUS[m.status][1];
+    st.setAttribute('data-online-slug', m.slug);
+    if (window.__SV14_APPLY_ONLINE) window.__SV14_APPLY_ONLINE();
     var kit = document.getElementById('room-kit');
     kit.textContent = m.custom ? '꾸미기 완료' : '기본 입주 세트';
     kit.className = 'pill ' + (m.custom ? 'back' : 'afk');
@@ -2851,6 +2865,32 @@ window.__SV14_BOOT = function(){
     if (r.data && r.data[0] && r.data[0].updated_at > lastStamp) location.reload();
   }
   setInterval(function(){ watchUpdates().catch(function(){}); }, 30000);
+  // ---------- 접속 중 표시 (실시간) ----------
+  // 로그인해서 방을 가진 형님이 페이지를 열어 두면 '접속 중'으로 알려지고, 닫으면 곧 꺼집니다.
+  var online = {};
+  function applyOnline(){
+    var els = document.querySelectorAll('[data-online-slug]');
+    for (var i = 0; i < els.length; i++) {
+      var on = !!online[els[i].getAttribute('data-online-slug')];
+      els[i].classList.toggle('online', on);
+      els[i].title = on ? '지금 접속 중' : '';
+    }
+  }
+  window.__SV14_APPLY_ONLINE = applyOnline;
+  function startPresence(){
+    var me = window.__SV14_ME;
+    var key = me && me.slug ? me.slug : 'guest-' + Math.random().toString(36).slice(2);
+    var ch = sb.channel('sv14-online', { config: { presence: { key: key } } });
+    ch.on('presence', { event: 'sync' }, function(){
+      var st = ch.presenceState(), next = {};
+      Object.keys(st).forEach(function(k){ (st[k] || []).forEach(function(p){ if (p && p.slug) next[p.slug] = true; }); });
+      online = next;
+      applyOnline();
+    });
+    ch.subscribe(function(status){
+      if (status === 'SUBSCRIBED' && me && me.slug) ch.track({ slug: me.slug, at: Date.now() });
+    });
+  }
   async function load(){
     var res = await Promise.all([
       sb.from('members').select('slug,owner,data,nuts,last_check,updated_at'),
@@ -2888,6 +2928,7 @@ window.__SV14_BOOT = function(){
     window.__SV14_ME = me;
     window.__SV14_BOOT();
     renderAuth();
+    try { startPresence(); } catch (e) {}
     if (window.__SV14_NOTICES) window.__SV14_NOTICES();
     if (!res[0].error) showBanner('');
     if (me && !me.slug && !me.admin) openAuth('claim');
