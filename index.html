@@ -797,6 +797,15 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
 .cmt-form button{flex:none}
 .cmt-need{font-size:.8rem;color:var(--muted);margin-top:8px}
 .cmt-need a{color:var(--accent)}
+
+/* ---------- 킹샷 도구 링크 ---------- */
+.tool-links{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.tool-links a{display:grid;gap:4px;height:100%;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:10px;text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}
+.tool-links a:hover{border-color:var(--accent);transform:translateY(-1px)}
+.tool-links b{font-size:1.02rem}
+.tool-links b::after{content:" ↗";color:var(--accent)}
+.tool-links span{font-size:.86rem;color:var(--muted);line-height:1.5}
+.tool-links em{font-style:normal;font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-top:auto}
 </style>
 </head>
 <body>
@@ -809,6 +818,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
       <li><a href="#log">생존일지</a></li>
       <li><a href="#members">형님들 미니홈피</a></li>
       <li><a href="#rules">생존 수칙</a></li>
+      <li><a href="#tools">킹샷 도구</a></li>
       <li><a href="#notice">공지</a></li>
       <li id="my-room-li" hidden><a href="#" id="my-room-link">내 방</a></li>
       <li><a href="#" id="auth-link" class="auth-link">로그인 · 회원가입</a></li>
@@ -944,6 +954,23 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
       <li><div><strong>접속 못 하면 단톡에 한 줄.</strong><span>잠수 3일이면 생존 확인 전화 간다.</span></div></li>
       <li><div><strong>16서버 얘기는 추억까지만.</strong><span>"돌아가자"는 말은 금지. 우리는 14서버에서 산다.</span></div></li>
     </ol>
+  </section>
+
+  <section id="tools">
+    <div class="sec-head">
+      <h2>킹샷 유용한 사이트</h2>
+      <p class="desc">다른 분들이 만든 킹샷 계산기와 자료 모음이에요. 누르면 새 창으로 열려요.</p>
+    </div>
+    <ul class="tool-links">
+      <li><a href="https://sera.ai.kr/value/events.php?shop=shop_a4a80eb71611ab279094" target="_blank" rel="noopener noreferrer">
+        <b>상점 아이템 가치 비교</b><span>#14 Kirby 서버 이벤트 상점·패키지 효율 (추천/비추천 판정)</span><em>sera.ai.kr</em></a></li>
+      <li><a href="https://kshot-lab.com/tools/pack-value" target="_blank" rel="noopener noreferrer">
+        <b>패키지 계산기</b><span>이벤트 패키지 안 아이템 가치로 효율 계산</span><em>킹샷 연구소 · kshot-lab.com</em></a></li>
+      <li><a href="https://kshot-lab.com/" target="_blank" rel="noopener noreferrer">
+        <b>킹샷 연구소</b><span>콘텐츠 해금 예측, 스펙업 비용, 이민 예측 등 계산기 모음</span><em>kshot-lab.com</em></a></li>
+      <li><a href="https://kingshot-data.com/buildings" target="_blank" rel="noopener noreferrer">
+        <b>건물 업그레이드 가이드</b><span>도시 센터·아카데미·병영 등 순금 1·5·8단계 비용표</span><em>kingshot-data.com</em></a></li>
+    </ul>
   </section>
 
   <section id="notice">
