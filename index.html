@@ -777,6 +777,16 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
 .auth-note{font-size:.78rem;color:var(--muted);line-height:1.5}
 .auth-actions{display:flex;gap:8px;justify-content:flex-end}
 .load-banner{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--hero-bg);color:var(--hero-fg);padding:10px 16px;border-radius:10px;font-size:.88rem;z-index:20;max-width:calc(100vw - 32px)}
+
+/* ---------- 공지 ---------- */
+.notice-form{display:grid;gap:10px;margin-bottom:16px}
+.notice-form label{display:grid;gap:4px;font-size:.85rem;font-weight:600;color:var(--muted)}
+.notice-form textarea{font:.92rem/1.6 var(--body)}
+.notice-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.notice-item h3{font-size:1.1rem;font-weight:700;margin-bottom:4px}
+.notice-meta{font-family:var(--mono);font-size:.75rem;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.notice-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}
+.notice-del{margin-left:auto;padding:2px 10px;font-size:.75rem}
 </style>
 </head>
 <body>
@@ -931,9 +941,13 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
       <h2>공지</h2>
       <p class="desc">새 공지가 생기면 여기에 올라갑니다.</p>
     </div>
-    <div class="card empty">
-      <p>아직 올라온 공지가 없습니다.</p>
-    </div>
+    <form class="notice-form card" id="notice-form" hidden>
+      <b>공지 쓰기 (관리자)</b>
+      <label for="notice-title">제목<input type="text" id="notice-title" maxlength="60" placeholder="예: 이번 주 토요일 레이드"></label>
+      <label for="notice-body">내용<textarea id="notice-body" rows="5" maxlength="2000" placeholder="공지 내용을 적어 주세요"></textarea></label>
+      <div class="cz-actions"><button type="submit" class="primary" id="notice-post">공지 올리기</button><span id="notice-msg" role="status"></span></div>
+    </form>
+    <ol class="notice-list" id="notice-list"><li class="card empty"><p>공지를 불러오는 중...</p></li></ol>
   </section>
 
 </main>
@@ -2655,6 +2669,62 @@ window.__SV14_BOOT = function(){
   route();
 };
 </script>
+<script>
+(function(){
+  'use strict';
+  // 공지: 누구나 읽고, 관리자만 쓰고 지움 (서버 함수 post_notice / delete_notice)
+  var list = document.getElementById('notice-list');
+  var form = document.getElementById('notice-form');
+  var msg = document.getElementById('notice-msg');
+  function el(tag, cls, text){ var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function nameOf(slug){ var m = (window.__SV14_MEMBERS || []).filter(function(x){ return x.slug === slug; })[0]; return m ? m.name : (slug || '관리자'); }
+  function fmt(ts){
+    var d = new Date(ts);
+    return d.getFullYear() + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + ('0' + d.getDate()).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  }
+  async function render(){
+    var sb = window.__SV14_SB, me = window.__SV14_ME, admin = !!(me && me.admin);
+    form.hidden = !admin;
+    var r = await sb.from('notices').select('id,title,body,author,created_at').order('created_at', { ascending: false }).limit(50);
+    list.textContent = '';
+    if (r.error) { var e1 = el('li', 'card empty'); e1.appendChild(el('p', null, '공지를 불러오지 못했어요.')); list.appendChild(e1); return; }
+    if (!r.data.length) { var e2 = el('li', 'card empty'); e2.appendChild(el('p', null, '아직 올라온 공지가 없습니다.')); list.appendChild(e2); return; }
+    r.data.forEach(function(n){
+      var li = el('li', 'card notice-item');
+      li.appendChild(el('h3', null, n.title));
+      var meta = el('div', 'notice-meta');
+      meta.appendChild(el('span', null, fmt(n.created_at)));
+      meta.appendChild(el('span', null, '작성: ' + nameOf(n.author)));
+      if (admin) {
+        var del = el('button', 'notice-del', '지우기'); del.type = 'button';
+        del.addEventListener('click', async function(){
+          if (!confirm('이 공지를 지울까요?')) return;
+          var d = await sb.rpc('delete_notice', { p_id: n.id });
+          if (d.error) { alert(d.error.message); return; }
+          render();
+        });
+        meta.appendChild(del);
+      }
+      li.appendChild(meta);
+      li.appendChild(el('div', 'notice-body', n.body));
+      list.appendChild(li);
+    });
+  }
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var t = document.getElementById('notice-title').value.trim(), b = document.getElementById('notice-body').value.trim();
+    if (!t) { msg.textContent = '제목을 적어 주세요.'; return; }
+    var btn = document.getElementById('notice-post'); btn.disabled = true; msg.textContent = '올리는 중...';
+    var r = await window.__SV14_SB.rpc('post_notice', { p_title: t, p_body: b });
+    btn.disabled = false;
+    if (r.error) { msg.textContent = r.error.message; return; }
+    document.getElementById('notice-title').value = ''; document.getElementById('notice-body').value = '';
+    msg.textContent = '공지를 올렸어요.';
+    render();
+  });
+  window.__SV14_NOTICES = function(){ render().catch(function(){}); };
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <script>
 (function(){
@@ -2721,6 +2791,7 @@ window.__SV14_BOOT = function(){
     window.__SV14_ME = me;
     window.__SV14_BOOT();
     renderAuth();
+    if (window.__SV14_NOTICES) window.__SV14_NOTICES();
     if (!res[0].error) showBanner('');
     if (me && !me.slug && !me.admin) openAuth('claim');
   }
