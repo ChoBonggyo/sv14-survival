@@ -787,6 +787,16 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
 .notice-meta{font-family:var(--mono);font-size:.75rem;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
 .notice-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}
 .notice-del{margin-left:auto;padding:2px 10px;font-size:.75rem}
+.cmt-list{list-style:none;margin:12px 0 0;padding:10px 0 0;border-top:1px dashed var(--line);display:grid;gap:6px}
+.cmt{font-size:.9rem;line-height:1.55;overflow-wrap:anywhere}
+.cmt b{font-weight:700;margin-right:6px}
+.cmt time{font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-left:6px}
+.cmt button{padding:0 6px;font-size:.72rem;margin-left:6px;border:none;background:none;color:var(--muted);text-decoration:underline}
+.cmt-form{display:flex;gap:6px;margin-top:8px}
+.cmt-form input{flex:1;min-width:0}
+.cmt-form button{flex:none}
+.cmt-need{font-size:.8rem;color:var(--muted);margin-top:8px}
+.cmt-need a{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -2689,6 +2699,10 @@ window.__SV14_BOOT = function(){
     list.textContent = '';
     if (r.error) { var e1 = el('li', 'card empty'); e1.appendChild(el('p', null, '공지를 불러오지 못했어요.')); list.appendChild(e1); return; }
     if (!r.data.length) { var e2 = el('li', 'card empty'); e2.appendChild(el('p', null, '아직 올라온 공지가 없습니다.')); list.appendChild(e2); return; }
+    var ids = r.data.map(function(n){ return n.id; });
+    var cr = await sb.from('notice_comments').select('id,notice_id,slug,body,created_at').in('notice_id', ids).order('id', { ascending: true });
+    var byNotice = {};
+    (cr.data || []).forEach(function(c){ (byNotice[c.notice_id] = byNotice[c.notice_id] || []).push(c); });
     r.data.forEach(function(n){
       var li = el('li', 'card notice-item');
       li.appendChild(el('h3', null, n.title));
@@ -2707,6 +2721,48 @@ window.__SV14_BOOT = function(){
       }
       li.appendChild(meta);
       li.appendChild(el('div', 'notice-body', n.body));
+      // 댓글: 누구나 읽고, 방을 가진 회원만 쓰기. 본인 댓글과 관리자는 지우기 가능
+      var cl = el('ol', 'cmt-list');
+      (byNotice[n.id] || []).forEach(function(c){
+        var ci = el('li', 'cmt');
+        ci.appendChild(el('b', null, nameOf(c.slug)));
+        ci.appendChild(document.createTextNode(c.body));
+        ci.appendChild(el('time', null, fmt(c.created_at)));
+        if (me && (me.admin || me.slug === c.slug)) {
+          var cd = el('button', null, '지우기'); cd.type = 'button';
+          cd.addEventListener('click', async function(){
+            if (!confirm('이 댓글을 지울까요?')) return;
+            var d = await sb.rpc('delete_comment', { p_id: c.id });
+            if (d.error) { alert(d.error.message); return; }
+            render();
+          });
+          ci.appendChild(cd);
+        }
+        cl.appendChild(ci);
+      });
+      if (cl.childNodes.length) li.appendChild(cl);
+      if (me && me.slug) {
+        var cf = el('form', 'cmt-form');
+        var inp = document.createElement('input'); inp.type = 'text'; inp.maxLength = 300; inp.placeholder = '댓글 달기 (300자까지)'; inp.setAttribute('aria-label', '댓글');
+        var sbtn = el('button', 'primary', '등록'); sbtn.type = 'submit';
+        cf.appendChild(inp); cf.appendChild(sbtn);
+        cf.addEventListener('submit', async function(ev){
+          ev.preventDefault();
+          var body = inp.value.trim(); if (!body) return;
+          sbtn.disabled = true;
+          var a = await sb.rpc('add_comment', { p_notice: n.id, p_body: body });
+          sbtn.disabled = false;
+          if (a.error) { alert(a.error.message); return; }
+          render();
+        });
+        li.appendChild(cf);
+      } else {
+        var need = el('p', 'cmt-need');
+        var lk = el('a', null, me ? '내 방을 고르면' : '로그인하면'); lk.href = '#';
+        lk.addEventListener('click', function(ev){ ev.preventDefault(); if (window.__SV14_OPEN_AUTH) window.__SV14_OPEN_AUTH(); });
+        need.appendChild(lk); need.appendChild(document.createTextNode(' 댓글을 달 수 있어요 (가입한 형님만)'));
+        li.appendChild(need);
+      }
       list.appendChild(li);
     });
   }
