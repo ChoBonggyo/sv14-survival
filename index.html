@@ -862,12 +862,12 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
         <div class="sub" id="alive-sub">전원 생존 중</div>
       </div>
       <div class="tile" role="listitem">
-        <div class="label">생존일지</div>
-        <div class="value"><span id="entry-count">0</span><small>건</small></div>
-        <div class="sub">기록된 날</div>
+        <div class="label">오늘 생존 출석</div>
+        <div class="value"><span id="entry-count">0</span><small>명</small></div>
+        <div class="sub" id="attend-sub">미니홈피에서 출석체크</div>
       </div>
       <div class="tile" role="listitem">
-        <div class="label">마지막 기록</div>
+        <div class="label">마지막 접속</div>
         <div class="value" id="last-date" style="font-size:1.35rem;padding-top:.3em">—</div>
         <div class="sub" id="last-title">아직 없음</div>
       </div>
@@ -2891,6 +2891,21 @@ window.__SV14_BOOT = function(){
       if (status === 'SUBSCRIBED' && me && me.slug) ch.track({ slug: me.slug, at: Date.now() });
     });
   }
+  // ---------- 현황판: 오늘 출석 인원, 마지막 접속 ----------
+  function pad(n){ return (n < 10 ? '0' : '') + n; }
+  function kstToday(){ return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10); }
+  async function fillTiles(){
+    var today = kstToday();
+    var n = rows.filter(function(r){ return r.last_check === today; }).length;
+    document.getElementById('entry-count').textContent = n;
+    document.getElementById('attend-sub').textContent = n ? '오늘(' + today.slice(5).replace('-', '.') + ') 출석한 형님' : '아직 아무도 출석 안 했어요';
+    var dEl = document.getElementById('last-date'), tEl = document.getElementById('last-title');
+    var r = await sb.from('members').select('slug,last_seen').not('last_seen', 'is', null).order('last_seen', { ascending: false }).limit(1);
+    if (r.error || !r.data || !r.data.length) { dEl.textContent = '—'; tEl.textContent = '아직 기록 없음'; return; }
+    var d = new Date(r.data[0].last_seen);
+    dEl.textContent = d.getFullYear() + '.' + pad(d.getMonth() + 1) + '.' + pad(d.getDate());
+    tEl.textContent = nameOfSlug(r.data[0].slug) + ' · ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
   async function load(){
     var res = await Promise.all([
       sb.from('members').select('slug,owner,data,nuts,last_check,updated_at'),
@@ -2929,6 +2944,8 @@ window.__SV14_BOOT = function(){
     window.__SV14_BOOT();
     renderAuth();
     try { startPresence(); } catch (e) {}
+    if (me && me.slug) { try { await sb.rpc('touch_seen'); } catch (e) {} }
+    fillTiles().catch(function(){});
     if (window.__SV14_NOTICES) window.__SV14_NOTICES();
     if (!res[0].error) showBanner('');
     if (me && !me.slug && !me.admin) openAuth('claim');
