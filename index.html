@@ -1041,7 +1041,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
         <div class="stage">
           <div class="miniroom" id="sec-miniroom">
             <h3 style="justify-self:stretch">미니룸</h3>
-            <canvas id="room-canvas" width="480" height="300" role="img" aria-label="미니룸"></canvas>
+            <canvas id="room-canvas" width="480" height="390" role="img" aria-label="미니룸"></canvas>
             <div class="room-title" id="room-title">—</div>
           </div>
           <div class="guestbook" id="sec-guestbook">
@@ -1733,51 +1733,110 @@ window.__SV14_BOOT = function(){
       }
     }
   };
-  function drawRoom(canvas, room, wk){
-    var ctx = canvas.getContext('2d');
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.imageSmoothingEnabled = false;
-    ctx.setTransform(3, 0, 0, 3, 0, 0);
-    var r = rectFn(ctx);
-    var wallDef = find(WALLS, room.wall), wall = wallDef.c;
-    var light = shade(wall, 18), dark = shade(wall, -34);
-    r(0, 0, 160, 62, wall);
+  // ===== 입체(아이소메트릭) 미니룸: 벽 두 면 + 마름모 바닥 + 두께 =====
+  // 바닥 좌표 u(뒤→오른쪽 벽 따라), v(뒤→왼쪽 벽 따라), 0~64
+  var ISO = { T: [80, 58], H: 48, N: 64, slab: 5, th: 3 };
+  function isoPt(u, v){ return [ISO.T[0] + u - v, ISO.T[1] + (u + v) / 2]; }
+  var ISO_PLACE = { shelf: [4, 18], tv: [22, 3], desk: [44, 5], bed: [9, 44], lamp: [5, 31], plant: [58, 9], tree: [55, 33], flowers: [34, 57] };
+  var ISO_W = { shelf: 16, tv: 24, desk: 30, bed: 36, lamp: 8, plant: 10, tree: 14, flowers: 24 };
+  var wallTex = document.createElement('canvas'); wallTex.width = 160; wallTex.height = 60;
+  var floorTex = document.createElement('canvas'); floorTex.width = 64; floorTex.height = 64;
+  function poly(ctx, pts, c){
+    ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+    for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.closePath(); ctx.fill();
+  }
+  function paintWall(room, wallDef){
+    var wctx = wallTex.getContext('2d');
+    wctx.clearRect(0, 0, 160, 60);
+    var r = rectFn(wctx), wall = wallDef.c, light = shade(wall, 18);
+    r(0, 0, 160, 60, wall);
     if (wallDef.scene) {
       SCENES[wallDef.scene](r);
     } else {
       if (room.pattern === 'stripe') { for (var sx = 2; sx < 160; sx += 10) r(sx, 0, 4, 60, light); }
       if (room.pattern === 'dot') {
-        for (var dy = 4; dy < 58; dy += 8) {
+        for (var dy = 4; dy < 56; dy += 8) {
           for (var dx = ((dy / 8) % 2 ? 4 : 0) + 2; dx < 160; dx += 8) r(dx, dy, 2, 2, light);
         }
       }
     }
-    r(0, 60, 160, 3, dark);
-    var fl = find(FLOORS, room.floor);
-    r(0, 63, 160, 37, fl.a);
+    room.items.forEach(function(id){ if (PLACE[id] && PLACE[id].z === 0 && DRAW[id]) DRAW[id](r, PLACE[id].x, PLACE[id].y); });
+    r(0, 56, 160, 4, shade(wall, -34)); r(0, 56, 160, 1, shade(wall, -12));
+  }
+  function paintFloor(fl){
+    var fctx = floorTex.getContext('2d');
+    var r = rectFn(fctx);
+    r(0, 0, 64, 64, fl.a);
     if (fl.id === 'wood' || fl.id === 'lightwood') {
-      for (var k = 0; k < 7; k++) {
-        var y0 = 63 + k * 6;
-        r(0, y0 + 5, 160, 1, fl.b);
-        for (var xx = (k % 2 ? 20 : 0); xx < 160; xx += 40) r(xx, y0, 1, 5, fl.b);
+      for (var k = 0; k < 11; k++) {
+        var y0 = k * 6;
+        r(0, y0, 64, 1, shade(fl.a, 10));
+        r(0, y0 + 5, 64, 1, fl.b);
+        for (var xx = (k % 2 ? 10 : 30); xx < 64; xx += 40) r(xx, y0, 1, 5, fl.b);
       }
     } else if (fl.id === 'tile') {
-      for (var ty = 63; ty < 100; ty += 8) {
-        for (var tx = (((ty - 63) / 8) % 2 ? 8 : 0); tx < 160; tx += 16) r(tx, ty, 8, 8, fl.b);
+      for (var ty = 0; ty < 64; ty += 8) {
+        for (var tx = ((ty / 8) % 2 ? 8 : 0); tx < 64; tx += 16) r(tx, ty, 8, 8, fl.b);
       }
     } else {
-      for (var cy = 66; cy < 100; cy += 5) {
-        for (var cx = (((cy - 66) / 5) % 2 ? 3 : 0); cx < 160; cx += 6) r(cx, cy, 1, 1, fl.b);
+      for (var cy = 2; cy < 64; cy += 4) {
+        for (var cx = ((cy / 4) % 2 ? 2 : 0); cx < 64; cx += 4) r(cx, cy, 1, 1, fl.b);
       }
     }
-    var list = [];
-    room.items.forEach(function(id){ if (PLACE[id]) list.push({ id: id, z: PLACE[id].z }); });
-    list.push({ id: 'mini', z: 96 });
-    list.sort(function(a, b){ return a.z - b.z; });
+    r(0, 0, 64, 3, 'rgba(0,0,0,.10)'); r(0, 0, 3, 64, 'rgba(0,0,0,.10)');
+    r(0, 0, 64, 1, 'rgba(0,0,0,.10)'); r(0, 0, 1, 64, 'rgba(0,0,0,.10)');
+  }
+  function drawRug(r){
+    r(18, 26, 28, 16, '#c9775a'); r(20, 24, 24, 20, '#c9775a');
+    r(22, 28, 20, 12, '#dc9a7e'); r(24, 30, 16, 8, '#e8b79f');
+    r(28, 33, 8, 2, '#c9775a');
+    for (var i = 20; i < 44; i += 4) { r(i, 22, 1, 2, '#f3e3d0'); r(i, 44, 1, 2, '#f3e3d0'); }
+  }
+  function drawRoom(canvas, room, wk){
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = false;
+    var S = canvas.width / 160, Hh = canvas.height / S;
+    ctx.setTransform(S, 0, 0, S, 0, 0);
+    var bg = ctx.createLinearGradient(0, 0, 0, Hh);
+    bg.addColorStop(0, '#efe7dc'); bg.addColorStop(1, '#d8cbbb');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, 160, Hh);
+    var wallDef = find(WALLS, room.wall), fl = find(FLOORS, room.floor);
+    paintWall(room, wallDef); paintFloor(fl);
+    var T = ISO.T, H = ISO.H, L = isoPt(0, ISO.N), R = isoPt(ISO.N, 0), F = isoPt(ISO.N, ISO.N);
+    var Tu = [T[0], T[1] - H], Lu = [L[0], L[1] - H], Ru = [R[0], R[1] - H];
+    var k = ISO.th, sl = ISO.slab;
+    // 방 아래 그림자, 바닥 두께, 벽 두께
+    ctx.fillStyle = 'rgba(70,45,25,.13)'; ctx.beginPath(); ctx.ellipse(80, F[1] + sl - 3, 60, 4, 0, 0, Math.PI * 2); ctx.fill();
+    poly(ctx, [L, F, [F[0], F[1] + sl], [L[0], L[1] + sl]], shade(fl.a, -38));
+    poly(ctx, [F, R, [R[0], R[1] + sl], [F[0], F[1] + sl]], shade(fl.a, -60));
+    poly(ctx, [[Lu[0] - 2 * k, Lu[1] - k], Lu, [L[0], L[1] + sl], [L[0] - 2 * k, L[1] + sl - k]], '#ddd4c6');
+    poly(ctx, [Ru, [Ru[0] + 2 * k, Ru[1] - k], [R[0] + 2 * k, R[1] + sl - k], [R[0], R[1] + sl]], '#c4baa9');
+    poly(ctx, [Lu, Tu, Ru, [Ru[0] + 2 * k, Ru[1] - k], [Tu[0], Tu[1] - 2 * k], [Lu[0] - 2 * k, Lu[1] - k]], '#f7f2ea');
+    // 벽 두 면 (벽지 그림을 반씩 비스듬히 붙임)
+    ctx.setTransform(S * 0.8, S * -0.4, 0, S * 0.8, S * Lu[0], S * Lu[1]);
+    ctx.drawImage(wallTex, 0, 0, 80, 60, 0, 0, 80, 60);
+    ctx.setTransform(S * 0.8, S * 0.4, 0, S * 0.8, S * Tu[0], S * Tu[1]);
+    ctx.drawImage(wallTex, 80, 0, 80, 60, 0, 0, 80, 60);
+    ctx.setTransform(S, 0, 0, S, 0, 0);
+    poly(ctx, [Lu, Tu, T, L], 'rgba(0,0,0,.07)');
+    ctx.fillStyle = 'rgba(0,0,0,.10)'; ctx.fillRect(T[0] - 0.34, Tu[1], 0.67, H);
+    // 바닥 (마름모) + 러그
+    ctx.setTransform(S, S * 0.5, -S, S * 0.5, S * T[0], S * T[1]);
+    ctx.drawImage(floorTex, 0, 0);
+    if (room.items.indexOf('rug') >= 0) drawRug(rectFn(ctx));
+    ctx.setTransform(S, 0, 0, S, 0, 0);
+    // 가구와 캐릭터: 뒤에 있는 것부터
+    var r = rectFn(ctx), list = [];
+    room.items.forEach(function(id){ if (ISO_PLACE[id] && DRAW[id]) list.push({ id: id, u: ISO_PLACE[id][0], v: ISO_PLACE[id][1] }); });
+    list.push({ id: 'mini', u: wk ? wk.u : 34, v: wk ? wk.v : 30 });
+    list.sort(function(a2, b2){ return (a2.u + a2.v) - (b2.u + b2.v); });
     list.forEach(function(it){
-      if (it.id === 'mini') drawMini(r, wk ? Math.round(wk.x) : 70, 96, room, wk ? { flip: wk.dir < 0, stride: wk.state === 'walk' && Math.floor(wk.step / 5) % 2 === 1 } : undefined);
-      else DRAW[it.id](r, PLACE[it.id].x, PLACE[it.id].y);
+      var pt = isoPt(it.u, it.v);
+      if (it.id === 'mini') drawMini(r, Math.round(pt[0] - 8), Math.round(pt[1]), room, wk ? { flip: wk.dir < 0, stride: wk.state === 'walk' && Math.floor(wk.step / 5) % 2 === 1 } : undefined);
+      else DRAW[it.id](r, Math.round(pt[0] - ISO_W[it.id] / 2), Math.round(pt[1]));
     });
   }
   function drawPortrait(canvas, room){
@@ -1830,18 +1889,21 @@ window.__SV14_BOOT = function(){
   var czText = document.getElementById('cz-text');
   var czMsg = document.getElementById('cz-msg');
   var current = null, preview = null, pPreview = cleanProfile(null);
-  // 미니룸 안에서 캐릭터가 왔다 갔다 합니다 (침대·화분 앞은 피해서 x 44~126 사이)
-  var roomWalker = { x: 70, dir: 1, state: 'idle', t: 30, step: 0, tx: 70 };
+  // 미니룸 바닥(마름모) 위를 캐릭터가 이리저리 걸어 다닙니다
+  var roomWalker = { u: 34, v: 30, dir: 1, state: 'idle', t: 30, step: 0, tu: 34, tv: 30 };
   var roomRaf = 0, roomLastT = 0;
   function stepRoomWalker(){
     var wk = roomWalker;
     if (wk.state === 'idle') {
-      if (--wk.t <= 0) { wk.tx = 44 + Math.random() * 82; wk.state = 'walk'; wk.dir = wk.tx < wk.x ? -1 : 1; }
+      if (--wk.t <= 0) {
+        wk.tu = 16 + Math.random() * 38; wk.tv = 16 + Math.random() * 36; wk.state = 'walk';
+        wk.dir = ((wk.tu - wk.u) - (wk.tv - wk.v)) < 0 ? -1 : 1;
+      }
       return;
     }
-    var dx = wk.tx - wk.x;
-    if (Math.abs(dx) < 0.5) { wk.x = wk.tx; wk.state = 'idle'; wk.t = 20 + Math.random() * 60; return; }
-    wk.x += dx < 0 ? -0.5 : 0.5; wk.step++;
+    var du = wk.tu - wk.u, dv = wk.tv - wk.v, d = Math.sqrt(du * du + dv * dv);
+    if (d < 0.6) { wk.u = wk.tu; wk.v = wk.tv; wk.state = 'idle'; wk.t = 20 + Math.random() * 60; return; }
+    wk.u += du / d * 0.6; wk.v += dv / d * 0.6; wk.step++;
   }
   function roomLoop(ts){
     if (roomView.hidden) { roomRaf = 0; return; }
