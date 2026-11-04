@@ -1075,7 +1075,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
         <fieldset><legend>바닥</legend><div id="cz-floor"></div></fieldset>
         <fieldset><legend>가구·자연물 (여러 개 선택)</legend><div id="cz-items"></div></fieldset>
         <fieldset class="wide"><legend>사는 지역 · 한마디</legend>
-          <label for="cz-region">사는 지역 (시 이름으로. 예: 진주, 서울, 청주. 비우면 전국일주)<input type="text" id="cz-region" name="region" maxlength="12" list="city-list" autocomplete="off" placeholder="예: 진주"></label>
+          <label for="cz-region">사는 지역 (예: 진주, 서울 영등포구. 적고 맨 아래 확인을 누르면 지도에 바로 반영돼요. 비우면 전국일주)<input type="text" id="cz-region" name="region" maxlength="12" list="city-list" autocomplete="off" placeholder="예: 진주"></label>
           <datalist id="city-list"></datalist>
           <label for="cz-note">오늘의 한마디<input type="text" id="cz-note" name="note" maxlength="40" placeholder="40자까지"></label>
         </fieldset>
@@ -2838,9 +2838,22 @@ window.__SV14_BOOT = function(){
   }
 
   var rows = [];
+  var lastStamp = '';
+  // 누가 방·지역·밤을 저장하면, 지도(홈)를 보고 있는 화면은 30초 안에 알아서 새로 불러옵니다.
+  // 미니홈피를 꾸미는 중이거나 로그인 창이 열려 있으면 건드리지 않아요.
+  async function watchUpdates(){
+    if (document.hidden || !lastStamp) return;
+    var home = document.getElementById('view-home');
+    if (!home || home.hidden || dlg.open) return;
+    var a = document.activeElement;
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+    var r = await sb.from('members').select('updated_at').order('updated_at', { ascending: false }).limit(1);
+    if (r.data && r.data[0] && r.data[0].updated_at > lastStamp) location.reload();
+  }
+  setInterval(function(){ watchUpdates().catch(function(){}); }, 30000);
   async function load(){
     var res = await Promise.all([
-      sb.from('members').select('slug,owner,data,nuts,last_check'),
+      sb.from('members').select('slug,owner,data,nuts,last_check,updated_at'),
       sb.from('nut_log').select('id,slug,d,t,n,other').order('id', { ascending: true }).limit(3000),
       sb.auth.getSession(),
       sb.from('profiles').select('slug,info')
@@ -2870,6 +2883,7 @@ window.__SV14_BOOT = function(){
       var adm = await sb.from('admins').select('user_id').eq('user_id', user.id);
       me = { id: user.id, login: (user.user_metadata && user.user_metadata.login) || '', slug: mine ? mine.slug : null, admin: !!(adm.data && adm.data.length) };
     }
+    rows.forEach(function(r){ if (r.updated_at && r.updated_at > lastStamp) lastStamp = r.updated_at; });
     window.__SV14_DATA = data;
     window.__SV14_ME = me;
     window.__SV14_BOOT();
