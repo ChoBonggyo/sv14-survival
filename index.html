@@ -2166,8 +2166,6 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
           <div class="pet-shop" id="pet-shop" hidden>
             <div class="ps-head"><b>🌰 밤 상점</b><span>내 밤 <b id="ps-nuts">—</b>개 · 미니홈피에서 출석하면 매일 2개</span></div>
             <div class="ps-items" id="ps-items"></div>
-            <div class="ps-head ps-sub"><b>👒 장신구</b><span>한 번 사면 내 아이들 모두 무료로 입을 수 있어요</span></div>
-            <div class="ps-items" id="ps-acc"></div>
           </div>
           <div class="pet-deco" id="pet-deco" hidden>
             <div class="ps-head"><b>🏡 정원 꾸미기</b><span id="pd-state"></span></div>
@@ -3983,18 +3981,6 @@ window.__SV14_BOOT = function(){
           b.addEventListener('click', function(){ buy(it); });
           box.appendChild(b);
         });
-        var ab = $('ps-acc'); ab.textContent = '';
-        ACC.forEach(function(it){
-          var have = !!(my.acc && my.acc[it.id]);
-          var b = el('button', 'ps-item' + (have ? ' have' : '')); b.type = 'button';
-          b.appendChild(el('span', 'ps-ic', it.icon));
-          b.appendChild(el('span', 'ps-nm', it.label));
-          b.appendChild(el('span', 'ps-pr', have ? '가지고 있어요' : '밤 ' + it.price + '개'));
-          b.disabled = have || busy || myNuts == null || myNuts < it.price;
-          b.setAttribute('aria-label', it.label + (have ? ', 이미 가지고 있음' : ' 사기, 밤 ' + it.price + '개'));
-          b.addEventListener('click', function(){ buyAcc(it); });
-          ab.appendChild(b);
-        });
       }
       function renderInv(){
         var box = $('pd-inv'), own = owned(), any = false;
@@ -4202,10 +4188,9 @@ window.__SV14_BOOT = function(){
         var box = $('pet-wear'), pp = selPet(), show = isMine() && !!pp && !adopting;
         box.hidden = !show;
         if (!show) return;
-        $('pw-title').textContent = '👒 ' + pp.name + ' 꾸미기 · 입히기는 무료';
+        $('pw-title').textContent = '👒 ' + pp.name + ' 꾸미기 · 장신구는 모두 무료! 머리·얼굴·목에 하나씩';
         var list = $('pw-items'); list.textContent = '';
-        var mine = ACC.filter(function(it){ return my.acc && my.acc[it.id]; });
-        if (!mine.length) { list.appendChild(el('p', 'pd-empty', '밤 상점에서 장신구를 사면 여기서 내 아이들에게 무료로 입혀 줄 수 있어요. 머리, 얼굴, 목에 하나씩 입을 수 있어요.')); return; }
+        var mine = ACC;
         var w = pp.wear || {};
         mine.forEach(function(it){
           var on = w[it.slot] === it.id;
@@ -5023,7 +5008,7 @@ window.__SV14_BOOT = function(){
       return {
         id: 'pet', icon: '🐣', title: '다마고치 키우기', custom: true,
         desc: '알을 받아 밥 주고 놀아 주고 씻겨 주며 키워요. 한 형님이 3마리까지 키울 수 있고, 3D 정원 섬에서 함께 돌아다녀요. 밤 상점에서 산 물건으로 정원을 꾸밀 수 있어요.',
-        help: '👒 밤 상점에서 장신구를 한 번 사면 내 아이들 모두에게 무료로 입힐 수 있어요. 아이들은 가끔 낮잠을 자거나 뛰고, 구르고, 점프하고, 빙글빙글 돌아요. 🏝️ 광장에서 형님들 아이를 구경하고, 다른 형님 아이에게 하루 한 번 하트를 주면 그 아이 경험치가 +3 올라요. 몇 시간마다 들러서 돌봐 주세요. 돌볼 때마다 경험치가 쌓여 알 → 아기 → 어린이 → 어른으로 자라요. 3D 화면은 끌어서 돌리고, 휠이나 두 손가락, + − 버튼으로 확대해요. 다마고치를 누르면 그 아이를 고르고 쓰다듬어요. 정원에 놓은 물건은 끌어서 옮길 수 있고, 산에는 다마고치들이 올라가요.',
+        help: '👒 꾸미기 칸에서 장신구를 무료로 입힐 수 있어요. 아이들은 가끔 낮잠을 자거나 뛰고, 구르고, 점프하고, 빙글빙글 돌아요. 🏝️ 광장에서 형님들 아이를 구경하고, 다른 형님 아이에게 하루 한 번 하트를 주면 그 아이 경험치가 +3 올라요. 몇 시간마다 들러서 돌봐 주세요. 돌볼 때마다 경험치가 쌓여 알 → 아기 → 어린이 → 어른으로 자라요. 3D 화면은 끌어서 돌리고, 휠이나 두 손가락, + − 버튼으로 확대해요. 다마고치를 누르면 그 아이를 고르고 쓰다듬어요. 정원에 놓은 물건은 끌어서 옮길 수 있고, 산에는 다마고치들이 올라가요.',
         rankTitle: '형님들 다마고치',
         reset: function(){ acts = {}; view = null; placing = null; selected = -1; adopting = false; },
         enter: function(){
