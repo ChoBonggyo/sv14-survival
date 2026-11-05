@@ -455,6 +455,17 @@ textarea{font:.85rem/1.55 var(--mono);resize:vertical}
 .game-rank .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .game-rank p{font-size:.8rem;color:var(--muted);margin:8px 0 0}
 .game-rank p:empty{display:none}
+.pet-closeup{margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(135deg,#fff6fb,#f3f9ff);display:grid;gap:6px}
+.pet-closeup[hidden]{display:none}
+.pc-title{font-weight:700;font-size:.92rem}
+.pc-view{width:100%;aspect-ratio:1;max-width:280px;margin:0 auto;border-radius:10px;overflow:hidden;background:radial-gradient(circle at 50% 35%,#ffffff,#dcefff);cursor:grab}
+.pc-view canvas{display:block;width:100%;height:100%}
+.pc-name{font-weight:700;font-size:.88rem;text-align:center}
+.pc-wear{display:grid;gap:3px}
+.pc-row{display:flex;gap:8px;align-items:center;font-size:.86rem;padding:4px 8px;border-radius:8px;background:#fff;border:1px solid var(--line)}
+.pc-row.none{color:var(--muted)}
+.pc-slot{font-weight:700;font-size:.78rem;color:var(--muted);width:2.4em}
+.pc-tip{font-size:.8rem;color:var(--muted);text-align:center}
 /* ---------- log timeline ---------- */
 .log{
   list-style:none;
@@ -2193,6 +2204,12 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
         <h3 id="g-rank-title">순위표 TOP 10</h3>
         <ol id="g-rank"></ol>
         <p id="g-rank-note"></p>
+        <div class="pet-closeup" id="pet-closeup" hidden>
+          <div class="pc-title">👀 꾸민 모습 자세히 보기</div>
+          <div class="pc-view" id="pc-view" title="끌면 돌려 볼 수 있어요"></div>
+          <div class="pc-name" id="pc-name">다마고치를 골라 주세요</div>
+          <div class="pc-wear" id="pc-wear"></div>
+        </div>
       </aside>
     </div>
   </div>
@@ -3947,6 +3964,7 @@ window.__SV14_BOOT = function(){
         $('pet-back').textContent = mineOk ? '← 내 정원으로 돌아가기' : '← 나가기';
         $('pet-plaza').hidden = !!(view && view.plaza);
         renderVisit(pp, mineOk);
+        renderCloseup(pp);
         $('pet-bars').hidden = !pp || adopting;
         $('pet-shop').hidden = !(isMine() && my.pets.length);
         $('pet-deco').hidden = !(isMine() && my.pets.length);
@@ -4006,6 +4024,26 @@ window.__SV14_BOOT = function(){
         if (selected >= 0 && L[selected]) $('pd-sel-name').textContent = SHOP_BY[L[selected].id].icon + ' ' + SHOP_BY[L[selected].id].label + ' 선택됨';
         $('pd-state').textContent = placing ? '정원 바닥을 눌러 놓으세요' : selected >= 0 ? '돌리거나 옮기거나 보관함에 넣을 수 있어요' : '정원에 놓인 물건은 끌어서 옮기거나, 눌러서 돌리거나 보관할 수 있어요';
         $('pw-hint').textContent = hint();
+      }
+      function renderCloseup(pp){
+        var nameEl = $('pc-name'), wearEl = $('pc-wear');
+        var sig = pp ? pp.id + '|' + pp.name + '|' + stageOf(pp) + '|' + JSON.stringify(pp.wear || {}) : '-';
+        if (wearEl.getAttribute('data-sig') === sig) return;
+        wearEl.setAttribute('data-sig', sig);
+        wearEl.textContent = '';
+        if (!pp) { nameEl.textContent = '다마고치를 골라 주세요'; return; }
+        nameEl.textContent = (KIND_ICON[pp.kind] || '') + ' ' + pp.name + ' · ' + nameOfMember(pp.slug) + '네 · ' + STAGES[stageOf(pp)][1];
+        var w = pp.wear || {}, any = false;
+        ['head', 'face', 'neck'].forEach(function(k){
+          var it = w[k] && ACC_BY[w[k]];
+          if (it) any = true;
+          var row = el('div', 'pc-row' + (it ? '' : ' none'));
+          row.appendChild(el('span', 'pc-slot', SLOT_NAME[k]));
+          row.appendChild(el('span', null, it ? it.icon + ' ' + it.label : '없음'));
+          wearEl.appendChild(row);
+        });
+        if (stageOf(pp) === 0) wearEl.appendChild(el('div', 'pc-tip', '알이라 장신구는 깨어나면 보여요.'));
+        else if (!any) wearEl.appendChild(el('div', 'pc-tip', isMine() ? '아래 "꾸미기" 칸에서 무료로 입혀 보세요!' : '아직 아무것도 안 입었어요.'));
       }
       function renderVisit(pp, mineOk){
         var box = $('pet-visit'), other = !!(view && pp && !(me && pp.slug === me.slug));
@@ -4630,6 +4668,53 @@ window.__SV14_BOOT = function(){
             part(nb, G.S, '#b8322a', 0, 0, 0.04, 0.09);
           }
         }
+        // ---- 꾸민 모습 자세히 보기 (오른쪽 작은 칸) ----
+        var PC = null;
+        try {
+          var pcR = new T.WebGLRenderer({ antialias: true, alpha: true });
+          pcR.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+          var pcS = new T.Scene();
+          pcS.add(new T.HemisphereLight('#ffffff', '#a8c890', 0.62));
+          var pcSun = new T.DirectionalLight('#fff1d6', 0.55); pcSun.position.set(3, 6, 5); pcS.add(pcSun);
+          var pcFloor = new T.Mesh(new T.CylinderGeometry(1.9, 2.0, 0.22, 40), mat('#9fd77f')); pcFloor.position.y = -0.11; pcS.add(pcFloor);
+          var pcCam = new T.PerspectiveCamera(30, 1, 0.1, 100);
+          pcCam.position.set(0, 2.6, 9.2); pcCam.lookAt(0, 1.55, 0);
+          PC = { r: pcR, s: pcS, c: pcCam, rig: null, key: '', rot: 0.5, drag: null, w: 0 };
+          $('pc-view').appendChild(pcR.domElement);
+          var pdom = pcR.domElement;
+          pdom.style.touchAction = 'none';
+          pdom.addEventListener('pointerdown', function(e){ PC.drag = { x: e.clientX, r: PC.rot }; try { pdom.setPointerCapture(e.pointerId); } catch (er) {} });
+          pdom.addEventListener('pointermove', function(e){ if (PC.drag) PC.rot = PC.drag.r + (e.clientX - PC.drag.x) * 0.02; });
+          pdom.addEventListener('pointerup', function(){ PC.drag = null; });
+          pdom.addEventListener('pointercancel', function(){ PC.drag = null; });
+        } catch (e) { PC = null; }
+        function pcStep(dt){
+          if (!PC) return;
+          var box = $('pet-closeup');
+          if (box.hidden) return;
+          var w = Math.min(280, $('pc-view').clientWidth || 0);
+          if (!w) return;
+          if (w !== PC.w) { PC.w = w; PC.r.setSize(w, w); }
+          var pp = selPet(), key = pp ? pp.id + '|' + pp.kind + '|' + stageOf(pp) + '|' + JSON.stringify(pp.wear || {}) : '';
+          if (key !== PC.key) {
+            PC.key = key;
+            if (PC.rig) { PC.s.remove(PC.rig.root); PC.rig = null; }
+            if (pp) {
+              var rg = buildPet(PET_COL[pp.kind] ? pp.kind : 'cat', stageOf(pp));
+              if (pp.wear && !rg.egg) dressPet(rg, pp.wear);
+              rg.root.scale.setScalar(rg.egg ? 1.15 : 1);
+              rg.root.traverse(function(o){ o.castShadow = false; });
+              PC.s.add(rg.root); PC.rig = rg;
+            }
+          }
+          if (!PC.drag) PC.rot += dt * 0.5;
+          if (PC.rig) {
+            PC.rig.root.rotation.y = PC.rot;
+            PC.rig.root.position.y = Math.abs(Math.sin(PC.rot * 2.2)) * 0.06;
+            if (PC.rig.eyes) { var bl = (PC.rot * 1.7) % 4 < 0.12 ? 0.12 : 1; PC.rig.eyes.forEach(function(e2){ e2.scale.y = bl; }); }
+          }
+          PC.r.render(PC.s, PC.c);
+        }
         // ---- 다마고치 여러 마리 ----
         var rigs = {};
         var marker = new T.Mesh(new T.ConeGeometry(0.32, 0.55, 14), mat('#ffd34d'));
@@ -4950,6 +5035,7 @@ window.__SV14_BOOT = function(){
           }
           placeCam();
           renderer.render(scene, camera);
+          pcStep(dt);
         }
         rebuild();
         return { frame: frame, rebuild: rebuild, makeGhost: makeGhost, clearGhost: clearGhost, burst: burst };
@@ -5186,6 +5272,7 @@ window.__SV14_BOOT = function(){
       hudEl.hidden = !!g.custom;
       gc.hidden = !!g.custom;
       document.getElementById('pet-world').hidden = !g.custom;
+      document.getElementById('pet-closeup').hidden = !g.custom;
       rankEl.textContent = ''; rankNote.textContent = '불러오는 중...';
       if (g.custom) {
         overlay.hidden = true; st = 'pet';
