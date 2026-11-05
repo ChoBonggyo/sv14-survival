@@ -787,6 +787,8 @@ footer .wrap{
 .room-title{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
 .room-stage{position:relative;width:100%;max-width:600px}
 .miniroom .room-stage canvas{max-width:100%}
+.miniroom canvas.room-gl{display:block;image-rendering:auto;max-width:600px;touch-action:pan-y;cursor:grab;background:linear-gradient(#efe7dc,#d8cbbb)}
+.miniroom canvas[hidden],.miniroom canvas.room-gl[hidden]{display:none}
 .room-mode{position:absolute;right:10px;bottom:10px;display:flex;border:2px solid #b9ad8f;border-radius:999px;overflow:hidden;background:#fffaf0;box-shadow:0 2px 6px rgba(0,0,0,.18)}
 .room-mode button{font:inherit;font-family:var(--mono);font-size:.8rem;font-weight:700;padding:5px 12px;border:0;background:transparent;color:#5a4a3a;cursor:pointer;min-width:44px}
 .room-mode button[aria-pressed="true"]{background:#4a5a32;color:#fff}
@@ -2874,13 +2876,32 @@ window.__SV14_BOOT = function(){
         for (var cx = (((cy - 66) / 5) % 2 ? 3 : 0); cx < 160; cx += 6) r(cx, cy, 1, 1, fl.b);
       }
     }
+    // 입체감: 벽 위쪽은 밝게, 벽과 바닥이 만나는 곳은 그늘, 양옆 가장자리는 살짝 어둡게
+    var gW = ctx.createLinearGradient(0, 0, 0, 60);
+    gW.addColorStop(0, 'rgba(255,255,255,.18)'); gW.addColorStop(0.55, 'rgba(255,255,255,0)'); gW.addColorStop(1, 'rgba(60,40,20,.10)');
+    ctx.fillStyle = gW; ctx.fillRect(0, 0, 160, 60);
+    var gF = ctx.createLinearGradient(0, 63, 0, 100);
+    gF.addColorStop(0, 'rgba(50,30,10,.30)'); gF.addColorStop(0.22, 'rgba(50,30,10,.06)'); gF.addColorStop(1, 'rgba(255,255,255,.12)');
+    ctx.fillStyle = gF; ctx.fillRect(0, 63, 160, 37);
+    [[0, 1], [160, -1]].forEach(function(q){
+      var gS = ctx.createLinearGradient(q[0], 0, q[0] + q[1] * 18, 0);
+      gS.addColorStop(0, 'rgba(40,25,10,.16)'); gS.addColorStop(1, 'rgba(40,25,10,0)');
+      ctx.fillStyle = gS; ctx.fillRect(q[1] > 0 ? 0 : 142, 0, 18, 100);
+    });
+    var SH2 = { shelf: [14, 74, 10], tv: [68, 72, 13], desk: [131, 78, 16], bed: [22, 98, 20], lamp: [48, 96, 5], plant: [149, 98, 6], tree: [105, 98, 8] };
+    var WSH = { window: [100, 8, 22, 20], frame: [30, 14, 12, 10] };
     var list = [];
     room.items.forEach(function(id){ if (PLACE[id]) list.push({ id: id, z: PLACE[id].z }); });
     list.push({ id: 'mini', z: 96 });
     list.sort(function(a, b){ return a.z - b.z; });
     list.forEach(function(it){
       if (it.id === 'mini') drawMini(r, wk ? Math.round(wk.x) : 70, 96, room, wk ? { flip: wk.dir < 0, stride: wk.state === 'walk' && Math.floor(wk.step / 5) % 2 === 1 } : undefined);
-      else DRAW[it.id](r, PLACE[it.id].x, PLACE[it.id].y);
+      else {
+        var sh2 = SH2[it.id], ws = WSH[it.id];
+        if (sh2) { r(sh2[0] - sh2[2] + 2, sh2[1] - 1, sh2[2] * 2 - 4, 1, 'rgba(0,0,0,.12)'); r(sh2[0] - sh2[2], sh2[1], sh2[2] * 2, 1, 'rgba(0,0,0,.2)'); r(sh2[0] - sh2[2] + 2, sh2[1] + 1, sh2[2] * 2 - 4, 1, 'rgba(0,0,0,.1)'); }
+        if (ws) r(ws[0] + 2, ws[1] + 2, ws[2], ws[3], 'rgba(40,25,10,.16)');
+        DRAW[it.id](r, PLACE[it.id].x, PLACE[it.id].y);
+      }
     });
   }
   // ===== 3D(아이소메트릭) 미니룸: 벽 두 면 + 마름모 바닥 + 입체 가구 =====
@@ -2897,13 +2918,14 @@ window.__SV14_BOOT = function(){
   }
   // 상자 하나: 왼쪽 앞면(v쪽), 오른쪽 앞면(u쪽, 어둡게), 윗면(밝게)
   function box(c, u0, v0, z0, du, dv, h, col){
+    if (c.rec) { c.rec.push(['box', u0, v0, z0, du, dv, h, col]); return; }
     var u1 = u0 + du, v1 = v0 + dv, z1 = z0 + h;
     poly(c, [P(u0, v1, z0), P(u1, v1, z0), P(u1, v1, z1), P(u0, v1, z1)], col, true);
     poly(c, [P(u1, v0, z0), P(u1, v1, z0), P(u1, v1, z1), P(u1, v0, z1)], shaded(col, -34), true);
     poly(c, [P(u0, v0, z1), P(u1, v0, z1), P(u1, v1, z1), P(u0, v1, z1)], shaded(col, 24), true);
   }
-  function faceV(c, v, ua, ub, za, zb, col){ poly(c, [P(ua, v, za), P(ub, v, za), P(ub, v, zb), P(ua, v, zb)], col, true); }
-  function faceU(c, u, va, vb, za, zb, col){ poly(c, [P(u, va, za), P(u, vb, za), P(u, vb, zb), P(u, va, zb)], shaded(col, -20), true); }
+  function faceV(c, v, ua, ub, za, zb, col){ if (c.rec) { c.rec.push(['faceV', v, ua, ub, za, zb, col]); return; } poly(c, [P(ua, v, za), P(ub, v, za), P(ub, v, zb), P(ua, v, zb)], col, true); }
+  function faceU(c, u, va, vb, za, zb, col){ if (c.rec) { c.rec.push(['faceU', u, va, vb, za, zb, col]); return; } poly(c, [P(u, va, za), P(u, vb, za), P(u, vb, zb), P(u, va, zb)], shaded(col, -20), true); }
   // fp = 바닥에서 차지하는 자리 [u0, v0, u1, v1]
   var ISO3 = {
     shelf: { fp: [0, 14, 8, 32], draw: function(c){
@@ -3061,11 +3083,214 @@ window.__SV14_BOOT = function(){
     drawMini(rectFn(ctx), Math.round(pt[0] - 8), Math.round(pt[1]), room, wk ? { flip: wk.dir < 0, stride: wk.state === 'walk' && Math.floor(wk.step / 5) % 2 === 1 } : undefined);
     front.forEach(function(it){ it.draw(ctx); });
   }
+  // ===== 진짜 3D 미니룸 (three.js, 다마고치와 같은 툰 느낌). 못 쓰는 기기에서는 위의 아이소메트릭 그림으로 =====
+  function loadThreeShared(){
+    if (window.THREE) return Promise.resolve();
+    if (!window.__SV14_THREEP) window.__SV14_THREEP = new Promise(function(res, rej){
+      var sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+      sc.async = true;
+      sc.onload = function(){ res(); };
+      sc.onerror = function(){ window.__SV14_THREEP = null; rej(new Error('load')); };
+      document.head.appendChild(sc);
+    });
+    return window.__SV14_THREEP;
+  }
+  var R3 = (function(){
+    var st = 'idle', T = null, renderer = null, scene = null, camera = null, el = null;
+    var VOXM = null, grad = null, MATS = {}, roomGroup = null, mini = null, key = '', miniKey = '';
+    var yaw = Math.PI / 4, drag = null, disp = null, ph = 0, lastT = 0;
+    var SC = 0.1, N = ISO.N, WH = ISO.H;
+    function mat(c, opt){
+      var k = c + (opt ? JSON.stringify(opt) : '');
+      if (!MATS[k]) MATS[k] = new T.MeshToonMaterial(Object.assign({ color: c, gradientMap: grad }, opt || {}));
+      return MATS[k];
+    }
+    function init(){
+      T = window.THREE;
+      try { renderer = new T.WebGLRenderer({ antialias: true, alpha: true }); } catch (e) { st = 'fail'; return; }
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = T.PCFSoftShadowMap;
+      grad = new T.DataTexture(new Uint8Array([120, 190, 255]), 3, 1, T.LuminanceFormat);
+      grad.minFilter = grad.magFilter = T.NearestFilter; grad.unpackAlignment = 1; grad.needsUpdate = true;
+      scene = new T.Scene();
+      scene.add(new T.HemisphereLight('#ffffff', '#b9a68a', 0.62));
+      var sun = new T.DirectionalLight('#fff1d6', 0.6);
+      sun.position.set(9, 13, 6); sun.target.position.set(4.2, 0, 4.2);
+      sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+      var sc = sun.shadow.camera; sc.left = -8; sc.right = 8; sc.top = 8; sc.bottom = -8; sc.near = 1; sc.far = 40;
+      sun.shadow.bias = -0.0015;
+      scene.add(sun); scene.add(sun.target);
+      camera = new T.OrthographicCamera(-6.5, 6.5, 5.2, -5.2, 0.1, 100);
+      el = renderer.domElement; el.className = 'room-gl';
+      el.setAttribute('role', 'img'); el.setAttribute('aria-label', '3D 미니룸 (끌면 돌려 볼 수 있어요)');
+      var stage = document.querySelector('.room-stage');
+      stage.insertBefore(el, stage.querySelector('.room-mode'));
+      el.addEventListener('pointerdown', function(e){ drag = { x: e.clientX, yaw: yaw }; try { el.setPointerCapture(e.pointerId); } catch (er) {} });
+      el.addEventListener('pointermove', function(e){ if (drag) yaw = Math.max(Math.PI / 4 - 0.65, Math.min(Math.PI / 4 + 0.65, drag.yaw - (e.clientX - drag.x) * 0.006)); });
+      el.addEventListener('pointerup', function(){ drag = null; });
+      el.addEventListener('pointercancel', function(){ drag = null; });
+      st = 'ready';
+    }
+    function place(){
+      var w = el.parentNode ? el.parentNode.clientWidth : 600;
+      w = Math.min(600, w || 600);
+      var h = Math.round(w * 0.8);
+      if (el.width !== Math.round(w * renderer.getPixelRatio()) || el.style.height !== h + 'px') renderer.setSize(w, h);
+      var tx = N * SC * 0.5, tz = N * SC * 0.5, ty = 1.7, d = 30;
+      camera.position.set(tx + Math.sin(yaw) * d * 0.78, ty + d * 0.62, tz + Math.cos(yaw) * d * 0.78);
+      camera.lookAt(tx, ty, tz);
+    }
+    function tex(canvas, rx, ox){
+      var t = new T.CanvasTexture(canvas);
+      t.magFilter = T.NearestFilter; t.minFilter = T.LinearFilter;
+      if (rx) { t.repeat.set(rx, 1); t.offset.set(ox || 0, 0); }
+      return t;
+    }
+    function boxAt(g, u0, v0, z0, du, dv, h, col, noShadow){
+      var m = new T.Mesh(new T.BoxGeometry(Math.max(0.02, du * SC), Math.max(0.02, h * SC), Math.max(0.02, dv * SC)), mat(col));
+      m.position.set((u0 + du / 2) * SC, (z0 + h / 2) * SC, (v0 + dv / 2) * SC);
+      if (!noShadow) { m.castShadow = true; m.receiveShadow = true; }
+      g.add(m);
+      return m;
+    }
+    function buildRoom(room){
+      if (roomGroup) { scene.remove(roomGroup); roomGroup.traverse(function(o){ if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map) o.material.map.dispose(); }); }
+      var g = new T.Group(); roomGroup = g;
+      var wallDef = find(WALLS, room.wall), fl = find(FLOORS, room.floor);
+      paintWall(room, wallDef); paintFloor(fl);
+      var fc = document.createElement('canvas'); fc.width = N; fc.height = N;
+      var fx = fc.getContext('2d'); fx.drawImage(floorTex, 0, 0);
+      if (room.items.indexOf('rug') >= 0) drawRug(rectFn(fx));
+      var L = N * SC, Hh = WH * SC;
+      // 바닥 판 + 두께
+      var slab = new T.Mesh(new T.BoxGeometry(L + 0.12, 0.5, L + 0.12), mat(shade(fl.a, -40)));
+      slab.position.set(L / 2 - 0.06, -0.25, L / 2 - 0.06); slab.receiveShadow = true; g.add(slab);
+      var floor = new T.Mesh(new T.PlaneGeometry(L, L), new T.MeshToonMaterial({ map: tex(fc), gradientMap: grad }));
+      floor.rotation.x = -Math.PI / 2; floor.position.set(L / 2, 0.002, L / 2); floor.receiveShadow = true; g.add(floor);
+      // 벽 두 면 (벽지 그림 반씩)
+      var wl = new T.Mesh(new T.PlaneGeometry(L, Hh), new T.MeshToonMaterial({ map: tex(wallTex, 0.5, 0), gradientMap: grad }));
+      wl.rotation.y = Math.PI / 2; wl.position.set(0, Hh / 2, L / 2); wl.receiveShadow = true; g.add(wl);
+      var wr = new T.Mesh(new T.PlaneGeometry(L, Hh), new T.MeshToonMaterial({ map: tex(wallTex, 0.5, 0.5), gradientMap: grad }));
+      wr.position.set(L / 2, Hh / 2, 0); wr.receiveShadow = true; g.add(wr);
+      var th = 0.3, capC = '#f7f2ea';
+      var bl = new T.Mesh(new T.BoxGeometry(th, Hh + 0.5, L + th), mat('#ddd4c6')); bl.position.set(-th / 2 - 0.02, (Hh - 0.5) / 2, L / 2 - th / 2); g.add(bl);
+      var br = new T.Mesh(new T.BoxGeometry(L + th, Hh + 0.5, th), mat('#c4baa9')); br.position.set(L / 2 - th / 2, (Hh - 0.5) / 2, -th / 2 - 0.02); g.add(br);
+      var c1 = new T.Mesh(new T.BoxGeometry(th + 0.02, 0.06, L + th), mat(capC)); c1.position.set(-th / 2, Hh + 0.03, L / 2 - th / 2); g.add(c1);
+      var c2 = new T.Mesh(new T.BoxGeometry(L + th, 0.06, th + 0.02), mat(capC)); c2.position.set(L / 2 - th / 2, Hh + 0.03, -th / 2); g.add(c2);
+      // 창문·액자는 벽에서 살짝 튀어나온 나무 틀
+      if (room.items.indexOf('window') >= 0) frameOn(g, PLACE.window.x, PLACE.window.y, 22, 18, '#f3efe6');
+      if (room.items.indexOf('frame') >= 0) frameOn(g, PLACE.frame.x, PLACE.frame.y, 12, 10, '#6a4e3a');
+      // 바닥 가구: 아이소메트릭 그림과 같은 상자들을 진짜 입체로
+      var rec = { rec: [] };
+      room.items.forEach(function(id){ if (ISO3[id]) ISO3[id].draw(rec); });
+      rec.rec.forEach(function(q){
+        if (q[0] === 'box') boxAt(g, q[1], q[2], q[3], q[4], q[5], q[6], q[7]);
+        else if (q[0] === 'faceV') boxAt(g, q[2], q[1], q[4], q[3] - q[2], 0.25, q[5] - q[4], q[6], true);
+        else if (q[0] === 'faceU') boxAt(g, q[1], q[2], q[4], 0.25, q[3] - q[2], q[5] - q[4], q[6], true);
+      });
+      if (room.items.indexOf('lamp') >= 0) { var lt = new T.PointLight('#ffd98a', 0.5, 4); lt.position.set(5.5 * SC, 21 * SC, 38.5 * SC); g.add(lt); }
+      scene.add(g);
+    }
+    // 벽지 그림 좌표(160x60, 왼쪽 절반=왼쪽 벽, 오른쪽 절반=오른쪽 벽)에 틀을 붙임
+    function frameOn(g, px, py, w, h, col){
+      var L = N * SC, Hh = WH * SC, t = 0.08, bw = 0.07;
+      var yTop = Hh * (1 - py / 60), yBot = Hh * (1 - (py + h) / 60), ym = (yTop + yBot) / 2, hh = yTop - yBot;
+      if (px + w / 2 < 80) {
+        var z0 = L * (1 - px / 80), z1 = L * (1 - (px + w) / 80), zm = (z0 + z1) / 2, ww = z0 - z1;
+        [[zm, yTop, ww + bw, bw], [zm, yBot, ww + bw, bw]].forEach(function(q){ var m = new T.Mesh(new T.BoxGeometry(t, q[3], q[2]), mat(col)); m.position.set(t / 2, q[1], q[0]); m.castShadow = true; g.add(m); });
+        [[z0, hh], [z1, hh]].forEach(function(q){ var m = new T.Mesh(new T.BoxGeometry(t, q[1], bw), mat(col)); m.position.set(t / 2, ym, q[0]); m.castShadow = true; g.add(m); });
+      } else {
+        var x0 = L * ((px - 80) / 80), x1 = L * ((px + w - 80) / 80), xm = (x0 + x1) / 2, wx = x1 - x0;
+        [[xm, yTop, wx + bw], [xm, yBot, wx + bw]].forEach(function(q){ var m = new T.Mesh(new T.BoxGeometry(q[2], bw, t), mat(col)); m.position.set(q[0], q[1], t / 2); m.castShadow = true; g.add(m); });
+        [[x0], [x1]].forEach(function(q){ var m = new T.Mesh(new T.BoxGeometry(bw, hh, t), mat(col)); m.position.set(q[0], ym, t / 2); m.castShadow = true; g.add(m); });
+        var sill = new T.Mesh(new T.BoxGeometry(wx + 0.2, 0.06, 0.22), mat(col)); sill.position.set(xm, yBot - 0.03, 0.11); sill.castShadow = true; g.add(sill);
+      }
+    }
+    // 미니미: 도트 그림을 블록으로 쌓아 입체로 (걷는 그림 2장)
+    function voxel(room, stride){
+      var c = document.createElement('canvas'); c.width = 48; c.height = 52;
+      var x = c.getContext('2d');
+      drawMini(rectFn(x), 16, 48, room, { noShadow: true, stride: stride });
+      var d = x.getImageData(0, 0, 48, 52).data, pts = [];
+      function op(i, j){ return i >= 0 && i < 48 && j >= 0 && j < 52 && d[(j * 48 + i) * 4 + 3] > 128; }
+      for (var j = 0; j < 52; j++) for (var i = 0; i < 48; i++) if (op(i, j)) pts.push([i, j]);
+      var geo = new T.BoxGeometry(1, 1, 1);
+      if (!VOXM) VOXM = new T.MeshToonMaterial({ color: '#ffffff', gradientMap: grad });
+      var m = new T.InstancedMesh(geo, VOXM, pts.length);
+      var M = new T.Matrix4(), col = new T.Color(), VS = 0.085;
+      pts.forEach(function(p, k){
+        var i = p[0], j = p[1];
+        var inner = op(i - 1, j) && op(i + 1, j) && op(i - 2, j) && op(i + 2, j);
+        var dz = inner ? 3.2 : 2;
+        M.makeScale(VS, VS, VS * dz);
+        M.setPosition((i - 24) * VS, (48 - j - 0.5) * VS, 0);
+        m.setMatrixAt(k, M);
+        var o = (j * 48 + i) * 4;
+        col.setRGB(d[o] / 255, d[o + 1] / 255, d[o + 2] / 255);
+        m.setColorAt(k, col);
+      });
+      m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true;
+      m.castShadow = true;
+      return m;
+    }
+    function buildMini(room){
+      if (mini) { scene.remove(mini.g); mini.a.geometry.dispose(); mini.b.geometry.dispose(); }
+      var g = new T.Group(), a = voxel(room, false), b = voxel(room, true);
+      b.visible = false; g.add(a); g.add(b);
+      var sh = new T.Mesh(new T.CircleGeometry(0.55, 24), new T.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.16, depthWrite: false }));
+      sh.rotation.x = -Math.PI / 2; sh.position.y = 0.01;
+      var sg = new T.Group(); sg.add(sh);
+      scene.add(g); scene.add(sg);
+      if (mini && mini.sg) scene.remove(mini.sg);
+      mini = { g: g, a: a, b: b, sg: sg };
+    }
+    function roomKey(room){ return [room.wall, room.pattern, room.floor, room.items.slice().sort().join(',')].join('|'); }
+    function miniKeyOf(room){ return [room.kind, room.hair, room.top, room.hold].join('|'); }
+    function frame(room, wk){
+      var now = performance.now(), dt = Math.min(0.1, (now - (lastT || now)) / 1000); lastT = now; ph += dt;
+      var k = roomKey(room); if (k !== key) { key = k; buildRoom(room); }
+      var mk = miniKeyOf(room); if (mk !== miniKey) { miniKey = mk; buildMini(room); }
+      var tu = wk ? wk.u : 40, tv = wk ? wk.v : 36;
+      if (!disp) disp = { u: tu, v: tv, face: Math.PI / 4 };
+      disp.u += (tu - disp.u) * Math.min(1, dt * 10); disp.v += (tv - disp.v) * Math.min(1, dt * 10);
+      var walking = !!(wk && wk.state === 'walk');
+      var want = Math.PI / 4 + (walking ? (wk.dir < 0 ? -0.6 : 0.6) : 0);
+      disp.face += (want - disp.face) * Math.min(1, dt * 6);
+      mini.g.position.set(disp.u * SC, walking ? Math.abs(Math.sin(ph * 9)) * 0.06 : 0, disp.v * SC);
+      mini.g.rotation.y = disp.face;
+      mini.sg.position.set(disp.u * SC, 0, disp.v * SC);
+      var strideOn = walking && Math.floor(wk.step / 5) % 2 === 1;
+      mini.a.visible = !strideOn; mini.b.visible = strideOn;
+      place();
+      renderer.render(scene, camera);
+    }
+    return {
+      // 3D로 그렸으면 true, 아직 못 그리면 false(그동안 아이소메트릭 그림을 씀)
+      draw: function(room, wk){
+        if (st === 'fail') return false;
+        if (st === 'idle') {
+          st = 'loading';
+          loadThreeShared().then(function(){ init(); if (st === 'ready' && !roomView.hidden && preview && roomMode === '3d') drawRoom(roomCanvas, preview); }, function(){ st = 'fail'; });
+          return false;
+        }
+        if (st !== 'ready') return false;
+        el.hidden = false;
+        try { frame(room, wk); } catch (e) { st = 'fail'; el.hidden = true; return false; }
+        return true;
+      },
+      hide: function(){ if (el) el.hidden = true; },
+      active: function(){ return st === 'ready' && el && !el.hidden; }
+    };
+  })();
   // 2D / 3D 보기 전환 (오른쪽 아래 스위치, 기기마다 기억)
   var roomMode = '3d';
   try { if (localStorage.getItem('sv14-room-mode') === '2d') roomMode = '2d'; } catch (e) {}
   function drawRoom(canvas, room){
     var is3 = roomMode === '3d', w = is3 ? 600 : 480, h = is3 ? 480 : 300;
+    if (is3 && canvas === roomCanvas && R3.draw(room, roomWalker)) { canvas.hidden = true; return; }
+    if (canvas === roomCanvas) { canvas.hidden = false; R3.hide(); }
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     if (is3) drawRoom3D(canvas, room, roomWalker); else drawRoom2D(canvas, room, roomWalker2D);
   }
@@ -3163,6 +3388,7 @@ window.__SV14_BOOT = function(){
   function roomLoop(ts){
     if (roomView.hidden) { roomRaf = 0; return; }
     if (ts - roomLastT >= 50) { roomLastT = ts; stepRoomWalker(); drawRoom(roomCanvas, preview, roomWalker); }
+    else if (roomMode === '3d' && R3.active()) R3.draw(preview, roomWalker);
     roomRaf = requestAnimationFrame(roomLoop);
   }
   function startRoomLoop(){ if (!roomRaf && !reduced && !roomView.hidden) roomRaf = requestAnimationFrame(roomLoop); }
@@ -3848,7 +4074,8 @@ window.__SV14_BOOT = function(){
     var threeP = null;
     function loadThree(){
       if (window.THREE) return Promise.resolve();
-      if (!threeP) threeP = new Promise(function(res, rej){
+      if (!threeP && window.__SV14_THREEP) threeP = window.__SV14_THREEP;
+      if (!threeP) threeP = window.__SV14_THREEP = new Promise(function(res, rej){
         var sc = document.createElement('script');
         sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
         sc.async = true;
