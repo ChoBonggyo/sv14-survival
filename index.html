@@ -311,6 +311,9 @@ textarea{font:.85rem/1.55 var(--mono);resize:vertical}
 .plaza-side li b{font-weight:700}
 .plaza-side li span{color:var(--muted);font-size:.82rem;font-weight:400;overflow-wrap:anywhere}
 .plaza-map{position:relative;min-width:0}
+.map-mode{right:auto;left:10px;bottom:10px}
+.map-credit{margin:4px 2px 0;font-size:.72rem;color:var(--muted);text-align:right}
+.map-credit[hidden]{display:none}
 .zoom-ctl{position:absolute;top:12px;right:12px;display:grid;gap:4px;z-index:1}
 .zoom-ctl button{
   min-width:42px;
@@ -1171,6 +1174,8 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
           <button type="button" id="zoom-reset" class="reset" title="전체 보기">전체</button>
           <span class="lvl" id="zoom-level">1배</span>
         </div>
+        <div class="room-mode map-mode" role="group" aria-label="지도 보기 방식"><button type="button" data-map="dot" aria-pressed="false">도트</button><button type="button" data-map="sat" aria-pressed="true">위성</button></div>
+        <p class="map-credit" id="map-credit">위성 지도: NASA Blue Marble 사진을 바탕으로 다듬음</p>
       </div>
       <div class="plaza-side">
         <h3>지역별 형님들 (누르면 그곳으로 확대)</h3>
@@ -5687,6 +5692,43 @@ window.__SV14_BOOT = function(){
     drawIslands(mc, false);
     landMask = mc.getImageData(0, 0, PW, PH).data;
   }
+  // 위성 느낌 지도: 같은 사이트의 그림 한 장(약 180KB)을 바로 불러 둠. 도트 지도와 단추로 바꿔 봄.
+  var mapMode = 'sat', satLayer = null;
+  try { if (localStorage.getItem('sv14-map-mode') === 'dot') mapMode = 'dot'; } catch (e) {}
+  var satImg = new Image();
+  satImg.onload = function(){
+    var c = document.createElement('canvas'); c.width = PW * 3; c.height = PH * 3;
+    var x = c.getContext('2d');
+    x.drawImage(satImg, 0, 0, c.width, c.height);
+    x.setTransform(3, 0, 0, 3, 0, 0);
+    x.fillStyle = '#7fb35f'; x.strokeStyle = '#3f6a32'; x.lineWidth = 0.6;
+    ISLANDS.slice(1).forEach(function(s2){ var q = geo(s2[0], s2[1]); x.beginPath(); x.ellipse(q.x, q.y, s2[2], s2[3], 0, 0, Math.PI * 2); x.fill(); x.stroke(); });
+    x.imageSmoothingEnabled = false;
+    var lr = rectFn(x);
+    for (var ln in LANDMARKS) {
+      if (!LANDMARKS.hasOwnProperty(ln) || !CITY[ln]) continue;
+      var L = LANDMARKS[ln], lp = CITY[ln].p, lw = L.rows[0].length;
+      drawSprite(lr, Math.round(lp.x - lw / 2), Math.round(lp.y) - 2 - L.rows.length, L.rows, L.pal);
+    }
+    satLayer = c;
+    if (typeof repaint === 'function') repaint();
+  };
+  satImg.src = 'sat-map.jpg';
+  function syncMapBtns(){
+    var bs = document.querySelectorAll('.map-mode button');
+    for (var i = 0; i < bs.length; i++) bs[i].setAttribute('aria-pressed', bs[i].getAttribute('data-map') === mapMode ? 'true' : 'false');
+    document.getElementById('map-credit').hidden = mapMode !== 'sat';
+  }
+  (function(){
+    var bs = document.querySelectorAll('.map-mode button');
+    for (var i = 0; i < bs.length; i++) bs[i].addEventListener('click', function(){
+      mapMode = this.getAttribute('data-map');
+      try { localStorage.setItem('sv14-map-mode', mapMode); } catch (e) {}
+      syncMapBtns();
+      if (typeof repaint === 'function') repaint();
+    });
+    syncMapBtns();
+  })();
   function isLand(x, y){
     var xi = Math.round(x), yi = Math.round(y);
     if (xi < 0 || yi < 0 || xi >= PW || yi >= PH) return false;
@@ -5820,7 +5862,11 @@ window.__SV14_BOOT = function(){
     ctx.clearRect(0, 0, plazaCanvas.width, plazaCanvas.height);
     ctx.imageSmoothingEnabled = false;
     ctx.setTransform(PS * view.z, 0, 0, PS * view.z, -view.x * PS * view.z, -view.y * PS * view.z);
-    ctx.drawImage(mapLayer, 0, 0);
+    if (mapMode === 'sat' && satLayer) {
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(satLayer, 0, 0, PW, PH);
+      ctx.imageSmoothingEnabled = false;
+    } else ctx.drawImage(mapLayer, 0, 0);
     var r = rectFn(ctx);
     var used = {};
     walkers.forEach(function(w){ if (w.homeName) used[w.homeName] = true; });
