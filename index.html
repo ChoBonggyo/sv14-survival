@@ -2860,8 +2860,22 @@ window.__SV14_BOOT = function(){
     var SHOP_BY = {};
     SHOP.forEach(function(it){ SHOP_BY[it.id] = it; });
     // 다마고치가 지나가지 못하는 반지름
-    var BLOCK = { pond: 2.4, mountain: 3.4, house: 2.4, rock: 1.0, tree: 1.0, pine: 1.0, bench: 1.2, fence: 1.0, flower: 0, mushroom: 0.4 };
+    var BLOCK = { pond: 2.4, mountain: 0, house: 2.4, rock: 1.0, tree: 1.0, pine: 1.0, bench: 1.2, fence: 1.0, flower: 0, mushroom: 0.4 };
     var ISLAND = 20, ROAM = 16.5;
+    // 산은 오를 수 있는 언덕: [중심x, 중심z, 반지름, 높이]
+    var HILL = [[0, 0, 4.4, 3.4], [2.1, 1.4, 2.5, 1.9]];
+    function bell(dd, R, H){ return dd >= R ? 0 : H * 0.5 * (1 + Math.cos(Math.PI * dd / R)); }
+    function hillH(L, x, z, skip){
+      var h = 0;
+      for (var i = 0; i < L.length; i++) {
+        var e = L[i];
+        if (!e || e.id !== 'mountain' || i === skip) continue;
+        var dx = x - e.x, dz = z - e.z, c = Math.cos(e.r || 0), sn = Math.sin(e.r || 0);
+        var lx = dx * c - dz * sn, lz = dx * sn + dz * c;
+        for (var q = 0; q < HILL.length; q++) h = Math.max(h, bell(Math.sqrt((lx - HILL[q][0]) * (lx - HILL[q][0]) + (lz - HILL[q][1]) * (lz - HILL[q][1])), HILL[q][2], HILL[q][3]));
+      }
+      return h;
+    }
     var threeP = null;
     function loadThree(){
       if (window.THREE) return Promise.resolve();
@@ -3017,7 +3031,7 @@ window.__SV14_BOOT = function(){
         $('pd-cancel').hidden = !placing;
         var L = my.garden;
         if (selected >= 0 && L[selected]) $('pd-sel-name').textContent = SHOP_BY[L[selected].id].icon + ' ' + SHOP_BY[L[selected].id].label + ' 선택됨';
-        $('pd-state').textContent = placing ? '정원 바닥을 눌러 놓으세요' : selected >= 0 ? '돌리거나 옮기거나 보관함에 넣을 수 있어요' : '정원에 놓인 물건을 누르면 고를 수 있어요';
+        $('pd-state').textContent = placing ? '정원 바닥을 눌러 놓으세요' : selected >= 0 ? '돌리거나 옮기거나 보관함에 넣을 수 있어요' : '정원에 놓인 물건은 끌어서 옮기거나, 눌러서 돌리거나 보관할 수 있어요';
         $('pw-hint').textContent = hint();
       }
       function renderPanels(){ renderTabs(); renderUi(); if (isMine() && my.pets.length) { renderShop(); renderInv(); } }
@@ -3224,6 +3238,7 @@ window.__SV14_BOOT = function(){
           clouds.add(cg);
         });
         var decoGroup = new T.Group(); scene.add(decoGroup);
+        var HILLGEO = null;
         var fxGroup = new T.Group(); scene.add(fxGroup);
 
         // ---- 꾸미기 물건 ----
@@ -3267,9 +3282,28 @@ window.__SV14_BOOT = function(){
             part(g, G.BX, '#c88a52', 0, 0.95, -0.28, 1.9, 0.45, 0.1);
             [[-0.8, 0.22], [0.8, 0.22], [-0.8, -0.22], [0.8, -0.22]].forEach(function(q){ part(g, G.BX, '#8a5a35', q[0], 0.25, q[1], 0.1, 0.5, 0.1); });
           } else if (id === 'mountain') {
-            part(g, G.CO, '#7fae6a', 0, 2.1, 0, 3.2, 4.2, 3.2);
-            part(g, G.CO, '#94bf7c', 1.6, 1.2, 1.0, 1.8, 2.4, 1.8);
-            part(g, G.CO, '#ffffff', 0, 3.75, 0, 1.0, 0.95, 1.0);
+            if (!HILLGEO) {
+              HILLGEO = HILL.map(function(q, qi){
+                var pts = [];
+                for (var k = 0; k <= 28; k++) { var dd = q[2] * (1 - k / 28); pts.push(new T.Vector2(Math.max(0.001, dd), bell(dd, q[2], q[3]) + qi * 0.01)); }
+                return new T.LatheGeometry(pts, 36);
+              });
+              var sp2 = [];
+              for (var k2 = 0; k2 <= 10; k2++) { var d2 = 1.25 * (1 - k2 / 10); sp2.push(new T.Vector2(Math.max(0.001, d2), bell(d2, HILL[0][2], HILL[0][3]) + 0.05)); }
+              HILLGEO.push(new T.LatheGeometry(sp2, 36));
+            }
+            HILL.forEach(function(q, qi){
+              var hm = new T.Mesh(HILLGEO[qi], mat(qi ? '#94bf7c' : '#7fae6a', { side: T.DoubleSide }));
+              hm.position.set(q[0], 0, q[1]); hm.castShadow = true; hm.receiveShadow = true; g.add(hm);
+            });
+            var cap = new T.Mesh(HILLGEO[HILL.length], mat('#ffffff', { side: T.DoubleSide })); g.add(cap);
+            var top = HILL[0][3];
+            part(g, G.CY, '#8a5a35', 0, top + 0.5, 0, 0.05, 1.0, 0.05);
+            part(g, G.BX, '#e4553f', 0.26, top + 0.84, 0, 0.46, 0.3, 0.04);
+            [[2.6, -1.2, '#f48fb1'], [-2.2, 1.6, '#ffd34d'], [-1.4, -2.6, '#ffffff'], [3.2, 2.6, '#f48fb1']].forEach(function(f){
+              var fy = Math.max(bell(Math.hypot(f[0], f[1]), HILL[0][2], HILL[0][3]), bell(Math.hypot(f[0] - HILL[1][0], f[1] - HILL[1][1]), HILL[1][2], HILL[1][3]));
+              part(g, G.S, f[2], f[0], fy + 0.08, f[1], 0.13);
+            });
           } else if (id === 'house') {
             part(g, G.BX, '#fff3dc', 0, 1.1, 0, 3, 2.2, 2.6);
             var roof = part(g, G.RF, '#e06a4a', 0, 2.95, 0, 2.55, 1.5, 2.25); roof.rotation.y = Math.PI / 4;
@@ -3280,6 +3314,7 @@ window.__SV14_BOOT = function(){
           return g;
         }
         var ghost = null;
+        function heightAt(x, z, skip){ return hillH(layout(), x, z, skip == null ? -1 : skip); }
         function makeGhost(id, r){
           clearGhost();
           ghost = buildDeco(id);
@@ -3297,11 +3332,11 @@ window.__SV14_BOOT = function(){
             if (!SHOP_BY[e.id]) return;
             if (placing && placing.idx === idx) return;
             var g = buildDeco(e.id);
-            g.position.set(e.x, 0, e.z);
+            g.position.set(e.x, e.id === 'mountain' ? 0 : heightAt(e.x, e.z, idx), e.z);
             g.rotation.y = e.r || 0;
             g.userData.idx = idx;
             if (idx === selected && isMine()) {
-              var ring = new T.Mesh(new T.TorusGeometry(Math.max(0.9, BLOCK[e.id] || 1) + 0.3, 0.09, 8, 40), mat('#ffd34d'));
+              var ring = new T.Mesh(new T.TorusGeometry((e.id === 'mountain' ? 4.6 : Math.max(0.9, BLOCK[e.id] || 1)) + 0.3, 0.09, 8, 40), mat('#ffd34d'));
               ring.rotation.x = Math.PI / 2; ring.position.y = 0.06; g.add(ring);
             }
             decoGroup.add(g);
@@ -3482,6 +3517,13 @@ window.__SV14_BOOT = function(){
           return false;
         }
         function pickTarget(s){
+          var hills = layout().filter(function(e){ return e && e.id === 'mountain'; });
+          if (hills.length && Math.random() < 0.4) {
+            var hl = hills[Math.floor(Math.random() * hills.length)], ha = Math.random() * Math.PI * 2, hr = Math.random() * 0.9;
+            var hx = hl.x + Math.cos(ha) * hr, hz = hl.z + Math.sin(ha) * hr;
+            if (!blocked(hx, hz, 0.9)) { s.tx = hx; s.tz = hz; s.state = 'walk'; s.climb = true; return; }
+          }
+          s.climb = false;
           for (var i = 0; i < 14; i++) {
             var a2 = Math.random() * Math.PI * 2, r2 = Math.random() * 14;
             var x = Math.cos(a2) * r2, z = Math.sin(a2) * r2;
@@ -3511,7 +3553,7 @@ window.__SV14_BOOT = function(){
         function burst(kind, id){
           var e = rigs[String(id)];
           if (!e) return;
-          var s = e.s, h = 3.2 * scaleOf(e.pp);
+          var s = e.s, h = 3.2 * scaleOf(e.pp) + heightAt(s.x, s.z);
           var set = { feed: ['🍙', '😋', '✨'], play: ['💕', '⚽', '🎵'], wash: ['💦', '💧', '✨'], pet: ['💗'] }[kind] || ['💗'];
           for (var i = 0; i < (kind === 'pet' ? 2 : 7); i++) {
             emit(set[i % set.length], s.x + (Math.random() - 0.5) * 1.6, h + Math.random() * 0.8, s.z + (Math.random() - 0.5) * 1.6, 1.2 + Math.random(), 1.6 + Math.random() * 0.6, 0.8 + Math.random() * 0.4);
@@ -3543,26 +3585,27 @@ window.__SV14_BOOT = function(){
           var p2 = h[0].point;
           return Math.sqrt(p2.x * p2.x + p2.z * p2.z) <= ISLAND - 2.5 ? p2 : null;
         }
-        function pickDeco(e){
+        function pickHit(e){
           setRay(e);
-          var h = ray.intersectObjects(decoGroup.children, true);
-          for (var i = 0; i < h.length; i++) { var o = h[i].object; while (o && o.parent !== decoGroup) o = o.parent; if (o && o.userData.idx != null) return o.userData.idx; }
-          return -1;
-        }
-        function pickPet(e){
-          setRay(e);
-          var roots = [], ids = Object.keys(rigs);
+          var best = null, roots = [], ids = Object.keys(rigs);
           ids.forEach(function(id){ roots.push(rigs[id].rig.root); });
-          var h = ray.intersectObjects(roots, true);
-          if (!h.length) return null;
-          var o = h[0].object;
-          while (o && roots.indexOf(o) < 0) o = o.parent;
-          for (var i = 0; i < ids.length; i++) if (rigs[ids[i]].rig.root === o) return rigs[ids[i]];
-          return null;
+          var hp = ray.intersectObjects(roots, true);
+          if (hp.length) {
+            var o = hp[0].object;
+            while (o && roots.indexOf(o) < 0) o = o.parent;
+            for (var i = 0; i < ids.length; i++) if (rigs[ids[i]].rig.root === o) best = { d: hp[0].distance, pet: rigs[ids[i]] };
+          }
+          var hd = ray.intersectObjects(decoGroup.children, true);
+          for (var j = 0; j < hd.length; j++) {
+            var o2 = hd[j].object;
+            while (o2 && o2.parent !== decoGroup) o2 = o2.parent;
+            if (o2 && o2.userData.idx != null) { if (!best || hd[j].distance < best.d) best = { d: hd[j].distance, deco: o2.userData.idx }; break; }
+          }
+          return best;
         }
         function onClick(e){
           if (placing && isMine()) { var g = groundAt(e); if (g) commitPlace(g.x, g.z); return; }
-          var hitPet = pickPet(e);
+          var hit = pickHit(e), hitPet = hit && hit.pet;
           if (hitPet && hitPet.pp) {
             selectPet(hitPet.pp.id);
             burst('pet', hitPet.pp.id);
@@ -3570,7 +3613,7 @@ window.__SV14_BOOT = function(){
             return;
           }
           if (isMine()) {
-            var idx = pickDeco(e);
+            var idx = hit && hit.deco != null ? hit.deco : -1;
             if (idx >= 0) { selected = idx; rebuild(); renderInv(); return; }
             if (selected >= 0) { selected = -1; rebuild(); renderInv(); }
           }
@@ -3579,11 +3622,17 @@ window.__SV14_BOOT = function(){
           try { dom.setPointerCapture(e.pointerId); } catch (er) {}
           ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
           var ids = Object.keys(ptrs);
-          if (ids.length === 1) { down = { x: e.clientX, y: e.clientY, th: cam.th, ph: cam.ph }; moved = false; }
+          if (ids.length === 1) {
+            down = { x: e.clientX, y: e.clientY, th: cam.th, ph: cam.ph }; moved = false;
+            if (!placing && isMine()) {
+              var hd0 = pickHit(e), g0 = groundAt(e);
+              if (hd0 && hd0.deco != null && g0 && my.garden[hd0.deco]) down.drag = { idx: hd0.deco, ox: my.garden[hd0.deco].x - g0.x, oz: my.garden[hd0.deco].z - g0.z };
+            }
+          }
           else if (ids.length === 2) { var a3 = ptrs[ids[0]], b3 = ptrs[ids[1]]; pinch = { d: Math.hypot(a3.x - b3.x, a3.y - b3.y), r: cam.r }; moved = true; }
         });
         dom.addEventListener('pointermove', function(e){
-          if (placing && ghost) { var g = groundAt(e); ghost.visible = !!g; if (g) ghost.position.set(g.x, 0, g.z); }
+          if (placing && ghost) { var g = groundAt(e); ghost.visible = !!g; if (g) ghost.position.set(g.x, placing.id === 'mountain' ? 0 : heightAt(g.x, g.z, placing.idx), g.z); }
           if (!ptrs[e.pointerId]) return;
           ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
           var ids = Object.keys(ptrs);
@@ -3591,6 +3640,18 @@ window.__SV14_BOOT = function(){
           if (!down) return;
           var dx = e.clientX - down.x, dy = e.clientY - down.y;
           if (!moved && Math.hypot(dx, dy) > 6) moved = true;
+          if (moved && down.drag) {
+            var dg = down.drag, de = my.garden[dg.idx], gp = groundAt(e);
+            if (!de) return;
+            if (!dg.on) { dg.on = true; selected = dg.idx; rebuild(); renderInv(); }
+            if (gp) {
+              var nx2 = gp.x + dg.ox, nz2 = gp.z + dg.oz, rr = Math.sqrt(nx2 * nx2 + nz2 * nz2), lim = ISLAND - 2.5;
+              if (rr > lim) { nx2 *= lim / rr; nz2 *= lim / rr; }
+              de.x = Math.round(nx2 * 100) / 100; de.z = Math.round(nz2 * 100) / 100;
+              decoGroup.children.forEach(function(c){ if (c.userData.idx === dg.idx) c.position.set(de.x, de.id === 'mountain' ? 0 : heightAt(de.x, de.z, dg.idx), de.z); });
+            }
+            return;
+          }
           if (moved) { cam.th = down.th - dx * 0.008; cam.ph = down.ph - dy * 0.006; }
         });
         function up(e){
@@ -3598,6 +3659,7 @@ window.__SV14_BOOT = function(){
           delete ptrs[e.pointerId];
           if (Object.keys(ptrs).length < 2) pinch = null;
           if (was && down && !moved && e.type === 'pointerup') onClick(e);
+          if (was && down && down.drag && down.drag.on) { down.drag = null; rebuild(); renderInv(); queueSave(); }
           if (!Object.keys(ptrs).length) down = null;
         }
         dom.addEventListener('pointerup', up);
@@ -3618,14 +3680,17 @@ window.__SV14_BOOT = function(){
           var rig = e.rig, s = e.s, pp = e.pp, act = pp ? acts[pp.id] : null;
           s.ph += dt;
           var r0 = rig.root;
+          var gh = heightAt(s.x, s.z);
           if (rig.egg) {
-            r0.position.set(s.x, 0, s.z);
+            r0.position.set(s.x, gh, s.z);
             var wob = pp ? (act ? 0.25 : 0.08) : 0.05;
             rig.body.rotation.z = Math.sin(s.ph * (act ? 14 : 3)) * wob;
             return;
           }
           var md = pp ? mood(now3(pp))[1] : '괜찮아요', sad = md === '시무룩해요' || md === '아파요';
           var speed = (sad ? 1.2 : 2.4) * (0.75 + 0.1 * (pp ? stageOf(pp) : 0));
+          var up0 = heightAt(s.x + Math.sin(s.heading) * 0.5, s.z + Math.cos(s.heading) * 0.5) - heightAt(s.x, s.z);
+          if (up0 > 0) speed *= Math.max(0.55, 1 - up0 * 0.6);
           var walking = false, hop = 0;
           if (act) {
             hop = Math.abs(Math.sin(s.ph * 9)) * 0.7;
@@ -3635,7 +3700,7 @@ window.__SV14_BOOT = function(){
             if (s.t <= 0) pickTarget(s);
           } else {
             var dx = s.tx - s.x, dz = s.tz - s.z, dist = Math.sqrt(dx * dx + dz * dz);
-            if (dist < 0.2) { s.state = 'idle'; s.t = 1 + Math.random() * 3; }
+            if (dist < 0.2) { s.state = 'idle'; s.t = s.climb ? 3 + Math.random() * 3 : 1 + Math.random() * 3; s.climb = false; }
             else {
               var nx = s.x + dx / dist * speed * dt, nz = s.z + dz / dist * speed * dt;
               if (blocked(nx, nz, 0.8) && !blocked(s.x, s.z, 0.8)) pickTarget(s);
@@ -3647,8 +3712,13 @@ window.__SV14_BOOT = function(){
             }
           }
           var bob = walking ? Math.abs(Math.sin(s.ph * 10)) * 0.22 : Math.sin(s.ph * 2) * 0.03;
-          r0.position.set(s.x, hop + Math.max(0, bob), s.z);
+          var ah = heightAt(s.x + Math.sin(s.heading) * 0.6, s.z + Math.cos(s.heading) * 0.6);
+          var tilt = -Math.atan((ah - gh) / 0.6) * 0.6;
+          s.tilt = (s.tilt || 0) + (tilt - (s.tilt || 0)) * Math.min(1, dt * 8);
+          r0.position.set(s.x, gh + hop + Math.max(0, bob), s.z);
+          r0.rotation.order = 'YXZ';
           r0.rotation.y = s.heading;
+          r0.rotation.x = s.tilt;
           rig.body.rotation.z = walking ? Math.sin(s.ph * 10) * 0.06 : 0;
           rig.legs.forEach(function(l, i){ l.position.y = (rig.legY || 0.26) + (walking ? Math.max(0, Math.sin(s.ph * 10 + (i === 0 || i === 3 ? 0 : Math.PI))) * 0.14 : 0); });
           if (rig.tail) rig.tail.rotation.y = Math.sin(s.ph * (walking || act ? 12 : 4)) * 0.45;
@@ -3690,7 +3760,7 @@ window.__SV14_BOOT = function(){
       return {
         id: 'pet', icon: '🐣', title: '다마고치 키우기', custom: true,
         desc: '알을 받아 밥 주고 놀아 주고 씻겨 주며 키워요. 한 형님이 3마리까지 키울 수 있고, 3D 정원 섬에서 함께 돌아다녀요. 밤 상점에서 산 물건으로 정원을 꾸밀 수 있어요.',
-        help: '몇 시간마다 들러서 돌봐 주세요. 돌볼 때마다 경험치가 쌓여 알 → 아기 → 어린이 → 어른으로 자라요. 3D 화면은 끌어서 돌리고, 휠이나 두 손가락, + − 버튼으로 확대해요. 다마고치를 누르면 그 아이를 고르고 쓰다듬어요.',
+        help: '몇 시간마다 들러서 돌봐 주세요. 돌볼 때마다 경험치가 쌓여 알 → 아기 → 어린이 → 어른으로 자라요. 3D 화면은 끌어서 돌리고, 휠이나 두 손가락, + − 버튼으로 확대해요. 다마고치를 누르면 그 아이를 고르고 쓰다듬어요. 정원에 놓은 물건은 끌어서 옮길 수 있고, 산에는 다마고치들이 올라가요.',
         rankTitle: '형님들 다마고치',
         reset: function(){ acts = {}; view = null; placing = null; selected = -1; adopting = false; },
         enter: function(){ uiT = 0; ensureWorld(); loadMine().catch(function(){}); loadList().catch(function(){}); renderPanels(); },
