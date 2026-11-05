@@ -3123,7 +3123,7 @@ window.__SV14_BOOT = function(){
       sun.shadow.bias = -0.0015;
       scene.add(sun); scene.add(sun.target);
       camera = new T.OrthographicCamera(-6.5, 6.5, 5.2, -5.2, 0.1, 100);
-      el = renderer.domElement; el.className = 'room-gl';
+      el = renderer.domElement; el.className = 'room-gl'; el.hidden = true; el.style.display = 'none';
       el.setAttribute('role', 'img'); el.setAttribute('aria-label', '3D 미니룸 (끌면 돌려 볼 수 있어요)');
       var stage = document.querySelector('.room-stage');
       stage.insertBefore(el, stage.querySelector('.room-mode'));
@@ -3272,15 +3272,15 @@ window.__SV14_BOOT = function(){
         if (st === 'fail') return false;
         if (st === 'idle') {
           st = 'loading';
-          loadThreeShared().then(function(){ init(); if (st === 'ready' && !roomView.hidden && preview && roomMode === '3d') drawRoom(roomCanvas, preview); }, function(){ st = 'fail'; });
+          loadThreeShared().then(function(){ init(); if (st === 'ready' && !roomView.hidden && preview) drawRoom(roomCanvas, preview); }, function(){ st = 'fail'; });
           return false;
         }
-        if (st !== 'ready') return false;
-        el.hidden = false;
-        try { frame(room, wk); } catch (e) { st = 'fail'; el.hidden = true; return false; }
+        if (st !== 'ready' || roomMode !== '3d') return false;
+        el.hidden = false; el.style.display = 'block';
+        try { frame(room, wk); } catch (e) { st = 'fail'; el.hidden = true; el.style.display = 'none'; return false; }
         return true;
       },
-      hide: function(){ if (el) el.hidden = true; },
+      hide: function(){ if (el) { el.hidden = true; el.style.display = 'none'; } },
       active: function(){ return st === 'ready' && el && !el.hidden; }
     };
   })();
