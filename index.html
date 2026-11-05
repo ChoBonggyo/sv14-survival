@@ -338,6 +338,24 @@ textarea{font:.85rem/1.55 var(--mono);resize:vertical}
 .plaza-note{font-size:.82rem;color:var(--muted)}
 
 /* ---------- 미니게임 ---------- */
+.game-hub{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:640px){.game-hub{grid-template-columns:1fr}}
+.game-tile{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:start;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:inherit;text-decoration:none;transition:transform .15s,border-color .15s,box-shadow .15s}
+.game-tile:hover,.game-tile:focus-visible{border-color:var(--accent);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-2px)}
+.gt-icon{font-size:2rem;line-height:1;width:52px;height:52px;display:grid;place-items:center;border-radius:12px;background:#f4e6cf;grid-row:span 2}
+.gt-body{display:grid;gap:4px;min-width:0}
+.gt-body b{font-size:1.08rem}
+.gt-desc{font-size:.86rem;color:var(--muted);line-height:1.55}
+.gt-top{font-size:.82rem;font-weight:700;color:var(--accent)}
+.gt-top:empty{display:none}
+.gt-mine{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.gt-go{grid-column:2;justify-self:end;font-size:.85rem;font-weight:700;color:var(--accent)}
+.game-page{padding-block:24px 56px}
+.game-page .room-top{flex-wrap:wrap;gap:8px}
+.game-switch{display:flex;gap:6px;flex-wrap:wrap}
+.game-switch a{padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:.85rem}
+.game-switch a[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.game-card h2{font-size:1.4rem;font-weight:800;margin:0 0 4px}
 .game-wrap{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:16px;align-items:start}
 @media (max-width:760px){.game-wrap{grid-template-columns:1fr}}
 .game-card,.game-rank{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
@@ -950,25 +968,9 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   <section id="games">
     <div class="sec-head">
       <h2>미니게임</h2>
-      <p class="desc">쉬는 시간에 한 판. 가입한 형님 점수는 순위표에 올라갑니다.</p>
+      <p class="desc">게임을 누르면 게임 페이지로 넘어가요. 가입한 형님 기록은 게임마다 순위표에 올라갑니다.</p>
     </div>
-    <div class="game-wrap">
-      <div class="game-card">
-        <h3>밤 받기</h3>
-        <p>하늘에서 떨어지는 밤을 받으세요. 밤은 1점, 황금밤은 5점. 가시 밤송이에 맞으면 목숨이 하나 줄어요.</p>
-        <div class="game-hud" aria-live="polite"><span>점수 <b id="g-score">0</b></span><span>목숨 <b id="g-lives">♥♥♥</b></span><span>내 최고 <b id="g-best">0</b></span></div>
-        <div class="game-stage">
-          <canvas id="game-canvas" width="720" height="450" tabindex="0" role="img" aria-label="밤 받기 게임 화면"></canvas>
-          <div class="game-overlay" id="g-overlay"><p id="g-msg">떨어지는 밤을 받아라!</p><button type="button" class="primary" id="g-start">시작하기</button></div>
-        </div>
-        <p class="game-help">조작: 컴퓨터는 마우스를 좌우로 움직이거나 ← → 방향키(A·D). 휴대폰은 화면을 누른 채 좌우로 밀기. Esc는 잠깐 멈춤.</p>
-      </div>
-      <aside class="game-rank" aria-label="밤 받기 순위표">
-        <h3>순위표 TOP 10</h3>
-        <ol id="g-rank"></ol>
-        <p id="g-rank-note">순위표를 불러오는 중...</p>
-      </aside>
-    </div>
+    <div class="game-hub" id="game-hub"></div>
   </section>
 
   <section id="members">
@@ -1138,6 +1140,32 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
         </div>
       </div>
     </section>
+  </div>
+</div>
+
+<div id="view-game" hidden>
+  <div class="wrap game-page">
+    <div class="room-top">
+      <a href="#games">← 미니게임 목록으로</a>
+      <nav class="game-switch" id="game-switch" aria-label="다른 게임"></nav>
+    </div>
+    <div class="game-wrap">
+      <div class="game-card">
+        <h2 id="gp-title">미니게임</h2>
+        <p id="gp-desc"></p>
+        <div class="game-hud" id="g-hud" aria-live="polite"></div>
+        <div class="game-stage">
+          <canvas id="game-canvas" width="720" height="450" tabindex="0" role="img" aria-label="게임 화면"></canvas>
+          <div class="game-overlay" id="g-overlay"><p id="g-msg"></p><button type="button" class="primary" id="g-start">시작하기</button></div>
+        </div>
+        <p class="game-help" id="gp-help"></p>
+      </div>
+      <aside class="game-rank" aria-label="순위표">
+        <h3>순위표 TOP 10</h3>
+        <ol id="g-rank"></ol>
+        <p id="g-rank-note"></p>
+      </aside>
+    </div>
   </div>
 </div>
 
@@ -2382,27 +2410,24 @@ window.__SV14_BOOT = function(){
   var homeView = document.getElementById('view-home');
   var roomView = document.getElementById('view-room');
 
-  // ===== 미니게임: 밤 받기 =====
-  (function(){
+  // ===== 미니게임: 홈에는 목록(#games), 게임마다 따로 들어가는 페이지(#game-<id>) =====
+  var gameView = document.getElementById('view-game');
+  var GAMES = (function(){
     var gc = document.getElementById('game-canvas');
-    if (!gc) return;
     var gx = gc.getContext('2d');
-    var GW = 240, GH = 150, GS = gc.width / GW, GROUND = 134;
+    var GW = 240, GH = 150, GS = gc.width / GW;
     var overlay = document.getElementById('g-overlay'), gMsg = document.getElementById('g-msg'), gStart = document.getElementById('g-start');
-    var elScore = document.getElementById('g-score'), elLives = document.getElementById('g-lives'), elBest = document.getElementById('g-best');
-    var rankEl = document.getElementById('g-rank'), rankNote = document.getElementById('g-rank-note');
+    var hudEl = document.getElementById('g-hud'), rankEl = document.getElementById('g-rank'), rankNote = document.getElementById('g-rank-note');
     var me = window.__SV14_ME || null;
     var mine = me && me.slug ? MEMBERS.filter(function(m){ return m.slug === me.slug; })[0] : null;
     var look = mine ? mine.room : Object.assign({}, defaultRoom(0), { kind: 'chick', hold: 'none' });
-    var best = 0;
-    try { best = parseInt(localStorage.getItem('sv14-nut-best') || '0', 10) || 0; } catch (e) {}
-    var st = 'ready', px = GW / 2 - 8, tx = null, dir = 1, moving = false;
-    var items = [], pops = [], score = 0, lives = 3, t = 0, spawnT = 0, hurtT = 0, stepT = 0, last = 0, raf = 0, keys = {};
+    var cur = null, st = 'ready', last = 0, raf = 0, keys = {}, pops = [];
 
-    function hud(){
-      elScore.textContent = score;
-      elLives.textContent = lives > 0 ? new Array(lives + 1).join('♥') : '—';
-      elBest.textContent = best;
+    function nameOfMember(sl){ var m = MEMBERS.filter(function(x){ return x.slug === sl; })[0]; return m ? m.name : sl; }
+    function pop(x, y, txt, c){ pops.push({ x: x, y: y, s: txt, c: c, life: 1 }); }
+    function text(str, x, y, size, c){
+      gx.font = 'bold ' + size + 'px sans-serif'; gx.textAlign = 'center'; gx.textBaseline = 'middle';
+      gx.fillStyle = c; gx.fillText(str, x, y); gx.textBaseline = 'alphabetic';
     }
     function nut(r, x, y, gold){
       var c = gold ? ['#e0a92a', '#f7d35c', '#8a6208', '#fff1b8'] : ['#7a4524', '#9a6238', '#4f2a14', '#e2c79a'];
@@ -2415,80 +2440,348 @@ window.__SV14_BOOT = function(){
       r(x - 5, y, 2, 1, c); r(x + 4, y, 2, 1, c); r(x, y - 5, 1, 2, c); r(x, y + 4, 1, 2, c);
       r(x - 4, y - 4, 1, 1, c); r(x + 4, y - 4, 1, 1, c); r(x - 4, y + 4, 1, 1, c); r(x + 4, y + 4, 1, 1, c);
     }
-    function scene(r){
-      r(0, 0, GW, GH, '#bfe3f7'); r(0, 0, GW, 34, '#a9d6f2');
-      puff(r, 20, 14, 22); puff(r, 150, 24, 18); puff(r, 200, 8, 14);
-      tri(r, 46, GROUND, 100, 34, '#a8d096'); tri(r, 176, GROUND, 130, 44, '#94c482');
-      r(0, GROUND, GW, GH - GROUND, '#7cb265'); r(0, GROUND, GW, 2, '#5f9a4c'); r(0, GROUND + 9, GW, GH - GROUND - 9, '#8a6a45');
-      for (var i = 6; i < GW; i += 22) r(i, GROUND + 4, 3, 1, '#6aa456');
+
+    // ---------- 1) 밤 받기 ----------
+    var nutG = (function(){
+      var GROUND = 134, px, tx, dir, moving, items, score, lives, t, spawnT, hurtT, stepT;
+      function scene(r){
+        r(0, 0, GW, GH, '#bfe3f7'); r(0, 0, GW, 34, '#a9d6f2');
+        puff(r, 20, 14, 22); puff(r, 150, 24, 18); puff(r, 200, 8, 14);
+        tri(r, 46, GROUND, 100, 34, '#a8d096'); tri(r, 176, GROUND, 130, 44, '#94c482');
+        r(0, GROUND, GW, GH - GROUND, '#7cb265'); r(0, GROUND, GW, 2, '#5f9a4c'); r(0, GROUND + 9, GW, GH - GROUND - 9, '#8a6a45');
+        for (var i = 6; i < GW; i += 22) r(i, GROUND + 4, 3, 1, '#6aa456');
+      }
+      return {
+        id: 'nut', icon: '🌰', title: '밤 받기', lower: false,
+        desc: '하늘에서 떨어지는 밤을 받으세요. 밤은 1점, 황금밤은 5점. 가시 밤송이에 맞으면 목숨이 하나 줄어요.',
+        help: '컴퓨터는 마우스를 좌우로 움직이거나 ← → 방향키(A·D). 휴대폰은 화면을 누른 채 좌우로 밀기. Esc는 잠깐 멈춤.',
+        intro: '떨어지는 밤을 받아라! 황금밤은 5점, 가시 밤송이는 피하세요.',
+        fmt: function(v){ return v + '점'; },
+        reset: function(){ px = GW / 2 - 8; tx = null; dir = 1; moving = false; items = []; score = 0; lives = 3; t = 0; spawnT = 0.6; hurtT = 0; stepT = 0; },
+        hud: function(){ return [['점수', score], ['목숨', lives > 0 ? new Array(lives + 1).join('♥') : '—']]; },
+        down: function(x){ tx = x; },
+        move: function(x){ tx = x; },
+        update: function(dt){
+          t += dt; stepT += dt;
+          var sp = 130, dx = 0, ox = px;
+          if (keys.left) dx -= 1;
+          if (keys.right) dx += 1;
+          if (dx) { px += dx * sp * dt; tx = null; }
+          else if (tx != null) { var d = tx - (px + 8); if (Math.abs(d) > 1) px += Math.max(-sp * dt, Math.min(sp * dt, d)); }
+          px = Math.max(0, Math.min(GW - 16, px));
+          moving = Math.abs(px - ox) > 0.01;
+          if (px - ox > 0.01) dir = 1; else if (px - ox < -0.01) dir = -1;
+          spawnT -= dt;
+          if (spawnT <= 0) {
+            spawnT = Math.max(0.28, 0.9 - t * 0.012) * (0.7 + Math.random() * 0.6);
+            var roll = Math.random();
+            var k = roll < Math.min(0.32, 0.16 + t * 0.003) ? 'burr' : (roll > 0.92 ? 'gold' : 'nut');
+            items.push({ x: 8 + Math.random() * (GW - 16), y: -8, vy: 38 + Math.min(70, t * 1.6) + Math.random() * 22, k: k });
+          }
+          if (hurtT > 0) hurtT -= dt;
+          for (var i = items.length - 1; i >= 0; i--) {
+            var it = items[i];
+            it.y += it.vy * dt;
+            if (it.x >= px - 3 && it.x <= px + 19 && it.y >= GROUND - 22 && it.y <= GROUND) {
+              items.splice(i, 1);
+              if (it.k === 'burr') {
+                if (hurtT <= 0) { lives--; hurtT = 1.2; pop(it.x, it.y - 4, '아야!', '#c0392b'); }
+              } else {
+                var g = it.k === 'gold' ? 5 : 1;
+                score += g;
+                pop(it.x, it.y - 4, '+' + g, it.k === 'gold' ? '#a87a00' : '#5a3018');
+              }
+              if (lives <= 0) { end(score); return; }
+            } else if (it.y > GH + 8) items.splice(i, 1);
+          }
+        },
+        draw: function(r){
+          scene(r);
+          items.forEach(function(it){
+            var x = Math.round(it.x), y = Math.round(it.y);
+            if (it.k === 'burr') burr(r, x, y); else nut(r, x, y, it.k === 'gold');
+          });
+          if (!(hurtT > 0 && Math.floor(hurtT * 10) % 2)) {
+            drawMini(r, Math.round(px), GROUND + 2, look, { flip: dir < 0, stride: st === 'play' && moving && Math.floor(stepT * 8) % 2 === 1 });
+          }
+        }
+      };
+    })();
+
+    // ---------- 2) 두더지 잡기 ----------
+    var moleG = (function(){
+      var HOLES = [], score, left, t, spawnT, swing;
+      for (var i = 0; i < 9; i++) HOLES.push({ x: 60 + (i % 3) * 60, y: 50 + Math.floor(i / 3) * 38, o: null });
+      function rise(o){
+        if (o.hit) return 1;
+        return Math.max(0, Math.min(1, o.t / 0.12, (o.life + 0.15 - o.t) / 0.15));
+      }
+      function hit(h){
+        var o = h.o;
+        swing = { x: h.x + 10, y: h.y - 14, t: 0.15 };
+        if (!o || o.hit || rise(o) < 0.3) return;
+        o.hit = 0.3;
+        if (o.k === 'burr') { score = Math.max(0, score - 2); pop(h.x, h.y - 26, '-2 아야!', '#c0392b'); }
+        else { var g = o.k === 'gold' ? 3 : 1; score += g; pop(h.x, h.y - 26, '+' + g, o.k === 'gold' ? '#a87a00' : '#ffffff'); }
+      }
+      function popper(r, cx, y0, o){
+        if (o.k === 'burr') {
+          r(cx - 8, y0 + 3, 16, 16, '#6aa84f'); r(cx - 6, y0 + 5, 4, 4, '#8fcf6a');
+          var c = '#3f7a2f';
+          for (var k = 0; k < 4; k++) { r(cx - 11, y0 + 5 + k * 4, 3, 1, c); r(cx + 8, y0 + 5 + k * 4, 3, 1, c); r(cx - 7 + k * 4, y0, 1, 3, c); }
+          return;
+        }
+        var body = o.k === 'gold' ? '#e0a92a' : '#8a5a3a', belly = o.k === 'gold' ? '#f7d98a' : '#c99a72';
+        r(cx - 8, y0 + 3, 16, 22, body); r(cx - 6, y0 + 1, 12, 2, body); r(cx - 4, y0, 8, 1, body);
+        r(cx - 5, y0 + 12, 10, 10, belly);
+        if (o.hit) { r(cx - 5, y0 + 7, 3, 1, '#1d1b1b'); r(cx + 2, y0 + 7, 3, 1, '#1d1b1b'); }
+        else { r(cx - 4, y0 + 6, 2, 2, '#1d1b1b'); r(cx + 2, y0 + 6, 2, 2, '#1d1b1b'); r(cx - 4, y0 + 6, 1, 1, '#ffffff'); r(cx + 2, y0 + 6, 1, 1, '#ffffff'); }
+        r(cx - 2, y0 + 9, 4, 3, '#e08090');
+        r(cx - 9, y0 + 10, 3, 1, '#4a2e1a'); r(cx + 6, y0 + 10, 3, 1, '#4a2e1a');
+        r(cx - 10, y0 + 14, 4, 3, '#f0c0a0'); r(cx + 6, y0 + 14, 4, 3, '#f0c0a0');
+        if (o.k === 'gold') { r(cx - 3, y0 - 3, 6, 2, '#f2c94c'); r(cx - 3, y0 - 5, 1, 2, '#f2c94c'); r(cx, y0 - 5, 1, 2, '#f2c94c'); r(cx + 2, y0 - 5, 1, 2, '#f2c94c'); }
+      }
+      return {
+        id: 'mole', icon: '🔨', title: '두더지 잡기', lower: false,
+        desc: '30초 동안 튀어나오는 두더지를 때리세요. 두더지 1점, 왕관 쓴 황금 두더지 3점. 밤송이를 때리면 2점 깎여요.',
+        help: '컴퓨터는 마우스로 클릭, 휴대폰은 손가락으로 톡. 키보드는 숫자 7 8 9 / 4 5 6 / 1 2 3이 구멍 위치예요. Esc는 잠깐 멈춤.',
+        intro: '두더지를 잡아라! 30초 동안 최대한 많이.',
+        fmt: function(v){ return v + '점'; },
+        reset: function(){ score = 0; left = 30; t = 0; spawnT = 0.4; swing = null; HOLES.forEach(function(h){ h.o = null; }); },
+        hud: function(){ return [['점수', score], ['남은 시간', Math.ceil(left) + '초']]; },
+        down: function(x, y){
+          for (var i = 0; i < HOLES.length; i++) {
+            var h = HOLES[i];
+            if (Math.abs(x - h.x) <= 17 && y >= h.y - 30 && y <= h.y + 8) { hit(h); return; }
+          }
+          swing = { x: x, y: y, t: 0.15 };
+        },
+        key: function(k){
+          var map = { '7': 0, '8': 1, '9': 2, '4': 3, '5': 4, '6': 5, '1': 6, '2': 7, '3': 8 };
+          if (map.hasOwnProperty(k)) { hit(HOLES[map[k]]); return true; }
+          return false;
+        },
+        update: function(dt){
+          t += dt; left -= dt;
+          if (swing) { swing.t -= dt; if (swing.t <= 0) swing = null; }
+          if (left <= 0) { left = 0; end(score); return; }
+          spawnT -= dt;
+          if (spawnT <= 0) {
+            spawnT = Math.max(0.3, 0.85 - t * 0.017) * (0.7 + Math.random() * 0.5);
+            var free = HOLES.filter(function(h){ return !h.o; });
+            if (free.length) {
+              var h = free[Math.floor(Math.random() * free.length)], roll = Math.random();
+              h.o = { k: roll < 0.15 ? 'burr' : (roll > 0.9 ? 'gold' : 'mole'), t: 0, life: Math.max(0.6, 1.25 - t * 0.02), hit: 0 };
+            }
+          }
+          HOLES.forEach(function(h){
+            var o = h.o;
+            if (!o) return;
+            o.t += dt;
+            if (o.hit) { o.hit -= dt; if (o.hit <= 0) h.o = null; }
+            else if (o.t > o.life + 0.15) h.o = null;
+          });
+        },
+        draw: function(r){
+          r(0, 0, GW, GH, '#8fc46f');
+          for (var y = 3; y < GH; y += 8) r(0, y, GW, 1, '#86bb66');
+          r(0, 0, GW, 14, '#7cb265');
+          HOLES.forEach(function(h){
+            r(h.x - 17, h.y - 4, 34, 8, '#3a2414'); r(h.x - 14, h.y - 5, 28, 1, '#3a2414');
+            var o = h.o;
+            if (o) {
+              var hgt = Math.round(24 * rise(o));
+              if (hgt > 0) {
+                gx.save(); gx.beginPath(); gx.rect(h.x - 22, h.y - 34, 44, 35); gx.clip();
+                popper(r, h.x, h.y + 1 - hgt, o);
+                gx.restore();
+              }
+            }
+            r(h.x - 18, h.y + 1, 36, 4, '#7a5232'); r(h.x - 16, h.y + 5, 32, 2, '#6a4628'); r(h.x - 18, h.y + 1, 36, 1, '#9a6a42');
+          });
+          if (swing) {
+            var sx = Math.round(swing.x), sy = Math.round(swing.y);
+            r(sx, sy - 1, 13, 3, '#a0703f');
+            r(sx - 7, sy - 6, 8, 12, '#8a939c'); r(sx - 7, sy - 6, 8, 2, '#b8c0c8'); r(sx - 7, sy + 4, 8, 2, '#6a737c');
+          }
+        }
+      };
+    })();
+
+    // ---------- 3) 기억력 카드 ----------
+    var memG = (function(){
+      var CW = 40, CH = 32, cards, open, matched, moves, t, started, lock, cursor, kb;
+      function pos(i){ return { x: 30 + (i % 4) * 46, y: 6 + Math.floor(i / 4) * 36 }; }
+      function flip(i){
+        var c = cards[i];
+        if (!c || c.up || c.done || lock > 0) return;
+        started = true; c.up = true; open.push(i);
+        if (open.length < 2) return;
+        moves++;
+        var a = cards[open[0]], b = cards[open[1]];
+        if (a.kind === b.kind) {
+          a.done = b.done = true; matched++;
+          var pp = pos(open[1]);
+          pop(pp.x + CW / 2, pp.y + 4, '짝!', '#fff2a8');
+          open = [];
+          if (matched === 8) end(Math.max(1, Math.round(t * 10)));
+        } else lock = 0.8;
+      }
+      return {
+        id: 'memory', icon: '🃏', title: '기억력 카드', lower: true,
+        desc: '카드 16장을 뒤집어 같은 동물 짝 8쌍을 모두 찾으세요. 빨리 끝낼수록 순위가 높아요.',
+        help: '카드를 클릭하거나 톡 누르세요. 키보드는 방향키로 고르고 Enter나 스페이스로 뒤집기. Esc는 잠깐 멈춤.',
+        intro: '같은 동물 짝을 찾아라! 시간이 짧을수록 좋아요.',
+        fmt: function(v){ return (v / 10).toFixed(1) + '초'; },
+        reset: function(){
+          var ids = KINDS.map(function(k){ return k.id; });
+          for (var i = ids.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), tmp = ids[i]; ids[i] = ids[j]; ids[j] = tmp; }
+          ids = ids.slice(0, 8);
+          var looks = {};
+          ids.forEach(function(k, n){ looks[k] = { kind: k, hair: HAIRS[(n * 3 + 1) % HAIRS.length].id, top: TOPS[(n * 5 + 2) % TOPS.length].id, hold: 'none' }; });
+          var deck = ids.concat(ids);
+          for (var d = deck.length - 1; d > 0; d--) { var e = Math.floor(Math.random() * (d + 1)), t2 = deck[d]; deck[d] = deck[e]; deck[e] = t2; }
+          cards = deck.map(function(k){ return { kind: k, look: looks[k], up: false, done: false }; });
+          open = []; matched = 0; moves = 0; t = 0; started = false; lock = 0; cursor = 0; kb = false;
+        },
+        hud: function(){ return [['시간', t.toFixed(1) + '초'], ['뒤집은 횟수', moves]]; },
+        down: function(x, y){
+          kb = false;
+          for (var i = 0; i < cards.length; i++) {
+            var p = pos(i);
+            if (x >= p.x && x <= p.x + CW && y >= p.y && y <= p.y + CH) { cursor = i; flip(i); return; }
+          }
+        },
+        key: function(k){
+          var c = cursor;
+          if (k === 'ArrowLeft') c = c % 4 ? c - 1 : c;
+          else if (k === 'ArrowRight') c = c % 4 < 3 ? c + 1 : c;
+          else if (k === 'ArrowUp') c = c >= 4 ? c - 4 : c;
+          else if (k === 'ArrowDown') c = c < 12 ? c + 4 : c;
+          else if (k === 'Enter' || k === ' ') { kb = true; flip(cursor); return true; }
+          else return false;
+          cursor = c; kb = true; return true;
+        },
+        update: function(dt){
+          if (started) t += dt;
+          if (lock > 0) { lock -= dt; if (lock <= 0) { open.forEach(function(i){ cards[i].up = false; }); open = []; lock = 0; } }
+        },
+        draw: function(r){
+          r(0, 0, GW, GH, '#3f6e4a');
+          for (var y = 0; y < GH; y += 4) r(0, y, GW, 1, '#3b6846');
+          cards.forEach(function(c, i){
+            var p = pos(i);
+            r(p.x + 1, p.y + 2, CW, CH, 'rgba(0,0,0,.25)');
+            if (c.up || c.done) {
+              r(p.x, p.y, CW, CH, c.done ? '#e9f5dc' : '#fffaf0'); r(p.x, p.y, CW, 1, '#ffffff');
+              r(p.x, p.y + CH - 1, CW, 1, '#d8ccb4');
+              drawMini(r, p.x + 12, p.y + CH - 3, c.look, { noShadow: true });
+              if (c.done) r(p.x + CW - 7, p.y + 2, 5, 5, '#6aa84f');
+            } else {
+              r(p.x, p.y, CW, CH, '#b44f1f'); r(p.x + 2, p.y + 2, CW - 4, CH - 4, '#d9622b');
+              r(p.x + 4, p.y + 4, CW - 8, CH - 8, '#e57a40');
+              nut(r, p.x + CW / 2, p.y + CH / 2 + 1, false);
+            }
+            if (kb && i === cursor) {
+              r(p.x - 2, p.y - 2, CW + 4, 2, '#ffd75e'); r(p.x - 2, p.y + CH, CW + 4, 2, '#ffd75e');
+              r(p.x - 2, p.y, 2, CH, '#ffd75e'); r(p.x + CW, p.y, 2, CH, '#ffd75e');
+            }
+          });
+        }
+      };
+    })();
+
+    // ---------- 4) 반응속도 테스트 ----------
+    var reactG = (function(){
+      var ROUNDS = 5, times, phase, waitT, goAt, msgT, lastMs;
+      function avg(){ var sum = 0; times.forEach(function(v){ sum += v; }); return times.length ? Math.round(sum / times.length) : 0; }
+      function next(){ phase = 'wait'; waitT = 1.2 + Math.random() * 2.3; goAt = 0; }
+      function press(now){
+        if (phase === 'wait') { phase = 'early'; msgT = 1.3; return; }
+        if (phase !== 'go') return;
+        lastMs = Math.max(1, Math.round(now - goAt));
+        times.push(lastMs);
+        if (times.length >= ROUNDS) { phase = 'done'; end(avg()); return; }
+        phase = 'show'; msgT = 1.1;
+      }
+      return {
+        id: 'reaction', icon: '⚡', title: '반응속도 테스트', lower: true,
+        desc: '화면이 초록색으로 바뀌는 순간 최대한 빨리 누르세요. 5번 잰 평균 시간이 짧을수록 순위가 높아요.',
+        help: '화면을 클릭하거나 톡 누르세요. 키보드는 스페이스나 Enter. 초록색 되기 전에 누르면 그 판은 다시 해요. Esc는 잠깐 멈춤.',
+        intro: '초록색이 되면 바로 누르기! 5번 재서 평균을 내요.',
+        fmt: function(v){ return v + 'ms'; },
+        reset: function(){ times = []; lastMs = 0; next(); },
+        resume: function(){ if (phase === 'wait' || phase === 'go') next(); },
+        hud: function(){ return [['횟수', Math.min(times.length + 1, ROUNDS) + ' / ' + ROUNDS], ['평균', times.length ? avg() + 'ms' : '—']]; },
+        down: function(x, y, now){ press(now); },
+        key: function(k, now){ if (k === ' ' || k === 'Enter') { press(now); return true; } return false; },
+        update: function(dt){
+          if (phase === 'wait') { waitT -= dt; if (waitT <= 0) { phase = 'go'; goAt = performance.now(); } }
+          else if (phase === 'early' || phase === 'show') { msgT -= dt; if (msgT <= 0) next(); }
+        },
+        draw: function(r){
+          var bgc = { wait: '#b8402e', go: '#2f9e4f', early: '#d99a1e', show: '#3a5a8a', done: '#3a5a8a' }[phase];
+          r(0, 0, GW, GH, bgc);
+          if (phase === 'wait') { text('기다리세요...', GW / 2, 62, 16, '#ffffff'); text('초록색이 되면 바로 누르기', GW / 2, 86, 9, '#ffe3dc'); }
+          else if (phase === 'go') { text('지금 누르세요!', GW / 2, 70, 20, '#ffffff'); }
+          else if (phase === 'early') { text('너무 빨라요!', GW / 2, 62, 16, '#ffffff'); text('이번 판은 다시 해요', GW / 2, 86, 9, '#fff4d6'); }
+          else { text(lastMs + 'ms', GW / 2, 62, 22, '#ffffff'); text(phase === 'done' ? '평균 ' + avg() + 'ms' : '다음 판 준비...', GW / 2, 90, 9, '#dbe6f5'); }
+          for (var i = 0; i < ROUNDS; i++) {
+            var x = GW / 2 - 40 + i * 20;
+            r(x - 3, 126, 7, 7, i < times.length ? '#ffffff' : 'rgba(255,255,255,.3)');
+          }
+        }
+      };
+    })();
+
+    // ---------- 공통 엔진 ----------
+    var LIST = [nutG, moleG, memG, reactG], BY = {};
+    LIST.forEach(function(g){ BY[g.id] = g; });
+    function bestKey(g){ return 'sv14-best-' + g.id; }
+    function getBest(g){
+      try {
+        var v = localStorage.getItem(bestKey(g));
+        if (v == null && g.id === 'nut') v = localStorage.getItem('sv14-nut-best');
+        return v == null || v === '' ? null : +v;
+      } catch (e) { return null; }
     }
-    function draw(){
+    function setBest(g, v){ try { localStorage.setItem(bestKey(g), String(v)); } catch (e) {} }
+    function better(g, a2, b2){ return b2 == null || (g.lower ? a2 < b2 : a2 > b2); }
+    var lastHud = '';
+    function renderHud(force){
+      var h = cur.hud(), b = getBest(cur);
+      h = h.concat([['내 최고', b == null ? '—' : cur.fmt(b)]]);
+      var sig = h.map(function(x){ return x[0] + ':' + x[1]; }).join('|');
+      if (!force && sig === lastHud) return;
+      lastHud = sig;
+      hudEl.textContent = '';
+      h.forEach(function(x){ var sp = el('span', null, x[0] + ' '); sp.appendChild(el('b', null, String(x[1]))); hudEl.appendChild(sp); });
+    }
+    function drawAll(){
       gx.setTransform(GS, 0, 0, GS, 0, 0);
       gx.imageSmoothingEnabled = false;
-      var r = rectFn(gx);
-      scene(r);
-      items.forEach(function(it){
-        var x = Math.round(it.x), y = Math.round(it.y);
-        if (it.k === 'burr') burr(r, x, y); else nut(r, x, y, it.k === 'gold');
-      });
-      if (!(hurtT > 0 && Math.floor(hurtT * 10) % 2)) {
-        drawMini(r, Math.round(px), GROUND + 2, look, { flip: dir < 0, stride: st === 'play' && moving && Math.floor(stepT * 8) % 2 === 1 });
-      }
-      gx.font = 'bold 8px sans-serif'; gx.textAlign = 'center';
+      cur.draw(rectFn(gx));
+      gx.font = 'bold 8px sans-serif'; gx.textAlign = 'center'; gx.textBaseline = 'alphabetic';
       pops.forEach(function(p){ gx.globalAlpha = Math.max(0, Math.min(1, p.life)); gx.fillStyle = p.c; gx.fillText(p.s, p.x, p.y); });
       gx.globalAlpha = 1;
-    }
-    function update(dt){
-      t += dt; stepT += dt;
-      var sp = 130, dx = 0, ox = px;
-      if (keys.left) dx -= 1;
-      if (keys.right) dx += 1;
-      if (dx) { px += dx * sp * dt; tx = null; }
-      else if (tx != null) { var d = tx - (px + 8); if (Math.abs(d) > 1) px += Math.max(-sp * dt, Math.min(sp * dt, d)); }
-      px = Math.max(0, Math.min(GW - 16, px));
-      moving = Math.abs(px - ox) > 0.01;
-      if (px - ox > 0.01) dir = 1; else if (px - ox < -0.01) dir = -1;
-      spawnT -= dt;
-      if (spawnT <= 0) {
-        spawnT = Math.max(0.28, 0.9 - t * 0.012) * (0.7 + Math.random() * 0.6);
-        var roll = Math.random();
-        var k = roll < Math.min(0.32, 0.16 + t * 0.003) ? 'burr' : (roll > 0.92 ? 'gold' : 'nut');
-        items.push({ x: 8 + Math.random() * (GW - 16), y: -8, vy: 38 + Math.min(70, t * 1.6) + Math.random() * 22, k: k });
-      }
-      if (hurtT > 0) hurtT -= dt;
-      for (var i = items.length - 1; i >= 0; i--) {
-        var it = items[i];
-        it.y += it.vy * dt;
-        if (it.x >= px - 3 && it.x <= px + 19 && it.y >= GROUND - 22 && it.y <= GROUND) {
-          items.splice(i, 1);
-          if (it.k === 'burr') {
-            if (hurtT <= 0) { lives--; hurtT = 1.2; pops.push({ x: it.x, y: it.y - 4, s: '아야!', c: '#c0392b', life: 1 }); }
-          } else {
-            var g = it.k === 'gold' ? 5 : 1;
-            score += g;
-            pops.push({ x: it.x, y: it.y - 4, s: '+' + g, c: it.k === 'gold' ? '#a87a00' : '#5a3018', life: 1 });
-          }
-          hud();
-          if (lives <= 0) { gameOver(); return; }
-        } else if (it.y > GH + 8) items.splice(i, 1);
-      }
-      for (var j = pops.length - 1; j >= 0; j--) { pops[j].y -= 14 * dt; pops[j].life -= dt * 1.2; if (pops[j].life <= 0) pops.splice(j, 1); }
     }
     function loop(ts){
       raf = 0;
       if (st !== 'play') return;
-      if (homeView.hidden || document.hidden) { pause(); return; }
+      if (gameView.hidden || document.hidden) { pause(); return; }
       var dt = Math.min(0.05, Math.max(0, (ts - last) / 1000)); last = ts;
-      update(dt); draw();
+      cur.update(dt);
+      for (var j = pops.length - 1; j >= 0; j--) { pops[j].y -= 14 * dt; pops[j].life -= dt * 1.2; if (pops[j].life <= 0) pops.splice(j, 1); }
+      drawAll(); renderHud();
       if (st === 'play') raf = requestAnimationFrame(loop);
     }
     function showOverlay(msg, btn){ gMsg.textContent = msg; gStart.textContent = btn; overlay.hidden = false; }
     function start(){
-      if (st !== 'pause') {
-        items = []; pops = []; score = 0; lives = 3; t = 0; spawnT = 0.6; hurtT = 0; px = GW / 2 - 8; tx = null;
-      }
+      if (st === 'pause') { if (cur.resume) cur.resume(); }
+      else { pops = []; cur.reset(); }
       st = 'play'; keys = {};
-      hud(); overlay.hidden = true;
+      overlay.hidden = true;
+      renderHud(true);
       try { gc.focus({ preventScroll: true }); } catch (e) {}
       last = performance.now();
       if (!raf) raf = requestAnimationFrame(loop);
@@ -2496,65 +2789,126 @@ window.__SV14_BOOT = function(){
     function pause(){
       if (st !== 'play') return;
       st = 'pause'; keys = {};
-      showOverlay('잠깐 멈췄어요. 지금 ' + score + '점', '계속하기');
+      showOverlay('잠깐 멈췄어요.', '계속하기');
     }
-    function gameOver(){
-      st = 'over'; draw();
-      var nb = score > best;
-      if (nb) { best = score; try { localStorage.setItem('sv14-nut-best', String(best)); } catch (e) {} }
-      hud();
-      var msg = '끝! ' + score + '점' + (nb && score > 0 ? ' · 내 최고 기록!' : '');
+    function end(result){
+      if (st !== 'play') return;
+      st = 'over';
+      drawAll();
+      var g = cur, b = getBest(g), nb = result > 0 && better(g, result, b);
+      if (nb) setBest(g, result);
+      renderHud(true);
+      var msg = '끝! ' + g.fmt(result) + (nb ? ' · 내 최고 기록!' : '');
       if (!(me && me.slug)) msg += ' (로그인하면 순위표에 올라가요)';
       showOverlay(msg, '다시 하기');
-      if (me && me.slug && score > 0 && window.__SV14_SB) {
-        window.__SV14_SB.rpc('submit_score', { p_game: 'nut', p_score: score }).then(function(r2){ if (!r2.error) loadRank(); }, function(){});
+      if (me && me.slug && result > 0 && window.__SV14_SB) {
+        window.__SV14_SB.rpc('submit_score', { p_game: g.id, p_score: result }).then(function(r2){
+          if (!r2.error) loadRank(g).catch(function(){});
+          else rankNote.textContent = '기록 저장 실패: ' + r2.error.message;
+        }, function(){});
       }
     }
-    function nameOfMember(sl){ var m = MEMBERS.filter(function(x){ return x.slug === sl; })[0]; return m ? m.name : sl; }
-    async function loadRank(){
+    async function loadRank(g){
       var sb = window.__SV14_SB;
       if (!sb) { rankNote.textContent = '순위표를 불러오지 못했어요.'; return; }
-      var r = await sb.from('game_scores').select('slug,best').eq('game', 'nut').order('best', { ascending: false }).limit(10);
+      var r = await sb.from('game_scores').select('slug,best').eq('game', g.id).order('best', { ascending: !!g.lower }).limit(10);
+      if (cur !== g) return;
       rankEl.textContent = '';
       if (r.error) { rankNote.textContent = '순위표 준비 중이에요.'; return; }
       if (!r.data.length) { rankNote.textContent = '아직 기록이 없어요. 첫 1등을 노려 보세요!'; return; }
-      rankNote.textContent = me && me.slug ? '' : '로그인한 형님 점수만 올라가요.';
+      rankNote.textContent = me && me.slug ? '' : '로그인한 형님 기록만 올라가요.';
       r.data.forEach(function(row, i){
         var li = el('li', me && row.slug === me.slug ? 'me' : null);
         li.appendChild(el('span', 'rk', String(i + 1)));
         li.appendChild(el('span', 'nm', nameOfMember(row.slug)));
-        li.appendChild(el('b', null, row.best + '점'));
+        li.appendChild(el('b', null, g.fmt(row.best)));
         rankEl.appendChild(li);
-        if (me && row.slug === me.slug && row.best > best) { best = row.best; hud(); }
+        if (me && row.slug === me.slug && better(g, row.best, getBest(g))) { setBest(g, row.best); renderHud(true); }
       });
+    }
+    function renderHub(){
+      var box = document.getElementById('game-hub');
+      box.textContent = '';
+      LIST.forEach(function(g){
+        var a = el('a', 'game-tile'); a.href = '#game-' + g.id;
+        a.appendChild(el('span', 'gt-icon', g.icon));
+        var body = el('span', 'gt-body');
+        body.appendChild(el('b', null, g.title));
+        body.appendChild(el('span', 'gt-desc', g.desc));
+        var top = el('span', 'gt-top'); top.id = 'gt-top-' + g.id; body.appendChild(top);
+        var b = getBest(g);
+        if (b != null) body.appendChild(el('span', 'gt-mine', '내 최고 ' + g.fmt(b)));
+        a.appendChild(body);
+        a.appendChild(el('span', 'gt-go', '하러 가기 →'));
+        box.appendChild(a);
+      });
+      var sb = window.__SV14_SB;
+      if (!sb) return;
+      sb.from('game_scores').select('slug,game,best').then(function(r){
+        if (r.error) return;
+        LIST.forEach(function(g){
+          var tEl = document.getElementById('gt-top-' + g.id);
+          if (!tEl) return;
+          var rows = r.data.filter(function(x){ return x.game === g.id; });
+          rows.sort(function(a2, b2){ return g.lower ? a2.best - b2.best : b2.best - a2.best; });
+          tEl.textContent = rows.length ? '👑 1등 ' + nameOfMember(rows[0].slug) + ' · ' + g.fmt(rows[0].best) : '아직 1등이 없어요';
+        });
+      }, function(){});
+    }
+    var sw = document.getElementById('game-switch');
+    LIST.forEach(function(g){ var a = el('a', null, g.icon + ' ' + g.title); a.href = '#game-' + g.id; a.setAttribute('data-game', g.id); sw.appendChild(a); });
+    function open(id){
+      var g = BY[id];
+      if (!g) return;
+      if (cur !== g) { if (raf) { cancelAnimationFrame(raf); raf = 0; } cur = g; st = 'ready'; pops = []; g.reset(); }
+      document.getElementById('gp-title').textContent = g.icon + ' ' + g.title;
+      document.getElementById('gp-desc').textContent = g.desc;
+      document.getElementById('gp-help').textContent = '조작: ' + g.help;
+      gc.setAttribute('aria-label', g.title + ' 게임 화면');
+      var links = sw.querySelectorAll('a');
+      for (var i = 0; i < links.length; i++) {
+        if (links[i].getAttribute('data-game') === id) links[i].setAttribute('aria-current', 'page');
+        else links[i].removeAttribute('aria-current');
+      }
+      renderHud(true); drawAll();
+      if (st === 'ready') showOverlay(g.intro, '시작하기');
+      rankEl.textContent = ''; rankNote.textContent = '순위표를 불러오는 중...';
+      loadRank(g).catch(function(){ rankNote.textContent = '순위표를 불러오지 못했어요.'; });
     }
     function isLeft(k){ return k === 'ArrowLeft' || k === 'a' || k === 'A'; }
     function isRight(k){ return k === 'ArrowRight' || k === 'd' || k === 'D'; }
     window.addEventListener('keydown', function(e){
-      if (st !== 'play') return;
-      if (isLeft(e.key)) { keys.left = true; e.preventDefault(); }
-      else if (isRight(e.key)) { keys.right = true; e.preventDefault(); }
-      else if (e.key === 'Escape') pause();
+      if (st !== 'play' || gameView.hidden) return;
+      var k = e.key;
+      if (k === 'Escape') { pause(); return; }
+      if (isLeft(k)) keys.left = true;
+      if (isRight(k)) keys.right = true;
+      var used = false;
+      if (!e.repeat && cur.key) used = cur.key(k, e.timeStamp || performance.now());
+      if (used || k.indexOf('Arrow') === 0 || k === ' ') e.preventDefault();
     });
     window.addEventListener('keyup', function(e){
       if (isLeft(e.key)) keys.left = false;
       if (isRight(e.key)) keys.right = false;
     });
-    function toLogical(e){ var b = gc.getBoundingClientRect(); return (e.clientX - b.left) / b.width * GW; }
+    function toLogical(e){ var b = gc.getBoundingClientRect(); return [(e.clientX - b.left) / b.width * GW, (e.clientY - b.top) / b.height * GH]; }
     var dragging = false;
     gc.addEventListener('pointerdown', function(e){
       if (st !== 'play') return;
-      dragging = true; tx = toLogical(e);
+      e.preventDefault();
+      dragging = true;
+      var q = toLogical(e);
+      if (cur.down) cur.down(q[0], q[1], e.timeStamp || performance.now());
       try { gc.setPointerCapture(e.pointerId); } catch (er) {}
     });
-    gc.addEventListener('pointermove', function(e){ if (st === 'play' && (dragging || e.pointerType === 'mouse')) tx = toLogical(e); });
+    gc.addEventListener('pointermove', function(e){
+      if (st === 'play' && cur.move && (dragging || e.pointerType === 'mouse')) { var q = toLogical(e); cur.move(q[0], q[1]); }
+    });
     gc.addEventListener('pointerup', function(){ dragging = false; });
     gc.addEventListener('pointercancel', function(){ dragging = false; });
     gStart.addEventListener('click', start);
     document.addEventListener('visibilitychange', function(){ if (document.hidden) pause(); });
-    hud(); draw();
-    showOverlay('떨어지는 밤을 받아라! 황금밤은 5점, 가시 밤송이는 피하세요.', '시작하기');
-    loadRank().catch(function(){ rankNote.textContent = '순위표를 불러오지 못했어요.'; });
+    return { open: open, hub: renderHub, pause: pause, has: function(id){ return BY.hasOwnProperty(id); } };
   })();
 
   // ===== 형님들 전국 지도 (360x380 논리 픽셀, 2배 확대) =====
@@ -3092,6 +3446,7 @@ window.__SV14_BOOT = function(){
     preview = JSON.parse(JSON.stringify(m.room));
     pPreview = cleanProfile(m.profile);
     homeView.hidden = true;
+    gameView.hidden = true;
     roomView.hidden = false;
     document.getElementById('room-owner').textContent = m.name;
     document.getElementById('p-name').textContent = m.name;
@@ -3120,9 +3475,18 @@ window.__SV14_BOOT = function(){
     saveBtn.disabled = false;
     window.scrollTo(0, 0);
   }
+  function showGame(id){
+    homeView.hidden = true;
+    roomView.hidden = true;
+    gameView.hidden = false;
+    GAMES.open(id);
+    window.scrollTo(0, 0);
+  }
   function showHome(hash){
     roomView.hidden = true;
+    gameView.hidden = true;
     homeView.hidden = false;
+    GAMES.hub();
     if (hash) {
       var target = document.getElementById(hash);
       if (target) target.scrollIntoView();
@@ -3131,8 +3495,9 @@ window.__SV14_BOOT = function(){
   }
   function route(){
     var h = location.hash.replace(/^#/, '');
-    var m = h.match(/^room-([a-z0-9-]+)$/);
-    if (m && BY_SLUG[m[1]]) showRoom(BY_SLUG[m[1]]);
+    var m = h.match(/^room-([a-z0-9-]+)$/), gm = h.match(/^game-([a-z]+)$/);
+    if (gm && GAMES.has(gm[1])) showGame(gm[1]);
+    else if (m && BY_SLUG[m[1]]) showRoom(BY_SLUG[m[1]]);
     else showHome(h);
   }
   window.addEventListener('hashchange', route);
