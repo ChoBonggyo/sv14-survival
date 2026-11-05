@@ -2779,6 +2779,143 @@ window.__SV14_BOOT = function(){
 
     // ---------- 공통 엔진 ----------
 
+
+    // ---- 다마고치 동물 7종 (그림 참고: 고양이·곰·강아지·양 / 원숭이·말·새) ----
+    var PET_KINDS = [
+      { id: 'cat', label: '고양이' }, { id: 'bear', label: '곰' }, { id: 'dog', label: '강아지' }, { id: 'sheep', label: '양' },
+      { id: 'monkey', label: '원숭이' }, { id: 'horse', label: '말' }, { id: 'bird', label: '새' }
+    ];
+    var PET_OL = '#5a3a28';
+    var PET_COL = {
+      cat: { fur: '#f4a85c', light: '#fde6c8', dark: '#d97f36', acc: '#d94a3a' },
+      bear: { fur: '#9c6b43', light: '#e9c9a0', dark: '#7a5030', acc: '#7f9c4c' },
+      dog: { fur: '#f6e7cf', light: '#fff6e8', dark: '#b37a4f', acc: '#5b8fd3' },
+      sheep: { fur: '#fbf6ea', light: '#f6dfc6', dark: '#6b4a35', acc: '#f08aa0' },
+      monkey: { fur: '#a97a50', light: '#f1d3b0', dark: '#7f5733', acc: '#f2c94c' },
+      horse: { fur: '#dca266', light: '#f7e8cf', dark: '#8a5432', acc: '#d94a3a' },
+      bird: { fur: '#8fc6f0', light: '#fbf1d8', dark: '#f2d35c', acc: '#f29a3a' }
+    };
+    // 발바닥 가운데가 (0,0). o = { flip, acc(소품), happy, blink, sad, flap }
+    function petSprite(r, kind, o){
+      o = o || {};
+      var C = PET_COL[kind] || PET_COL.cat, OL = PET_OL, EYE = '#2a1a14';
+      var f = o.flip ? -1 : 1;
+      function R(x, y, w, h, c){ r(f > 0 ? x : -x - w, y, w, h, c); }
+      function ell(cx, cy, w, h, c){
+        var top = cy - Math.floor(h / 2);
+        for (var yy = 0; yy < h; yy++) {
+          var dy = (yy + 0.5) / h * 2 - 1;
+          var half = Math.round(Math.sqrt(Math.max(0, 1 - dy * dy)) * w / 2);
+          if (half > 0) R(cx - half, top + yy, half * 2, 1, c);
+        }
+      }
+      function tri(x, y, w, h, c){
+        for (var i = 0; i < h; i++) { var ww = Math.max(1, Math.round(w * (i + 1) / h)); R(x + Math.floor((w - ww) / 2), y + i, ww, 1, c); }
+      }
+      function paint(list){
+        list.forEach(function(q){
+          if (q[0] === 'e') ell(q[1], q[2], q[3] + 2, q[4] + 2, OL);
+          else if (q[0] === 't') tri(q[1] - 1, q[2] - 1, q[3] + 2, q[4] + 2, OL);
+          else R(q[1] - 1, q[2] - 1, q[3] + 2, q[4] + 2, OL);
+        });
+        list.forEach(function(q){
+          if (q[0] === 'e') ell(q[1], q[2], q[3], q[4], q[5]);
+          else if (q[0] === 't') tri(q[1], q[2], q[3], q[4], q[5]);
+          else R(q[1], q[2], q[3], q[4], q[5]);
+        });
+      }
+      var back = [], main = [], front = [];
+      var flap = Math.round(Math.sin(o.flap || 0) * 1.5);
+      // 몸통 (새만 따로)
+      if (kind === 'bird') {
+        main.push(['e', 0, -15, 20, 24, C.fur]);
+        main.push(['r', -1, -30, 2, 3, C.fur]);
+      } else {
+        var legC = kind === 'sheep' ? C.dark : C.fur;
+        main.push(['r', -5, -4, 4, 4, legC], ['r', 1, -4, 4, 4, legC]);
+        main.push(['e', 0, -9, kind === 'sheep' ? 16 : 13, kind === 'sheep' ? 12 : 11, C.fur]);
+        main.push(['e', -7, -10, 4, 6, kind === 'sheep' ? C.light : C.fur], ['e', 7, -10, 4, 6, kind === 'sheep' ? C.light : C.fur]);
+        if (kind === 'sheep') main.push(['e', 0, -21, 22, 18, C.fur], ['e', -6, -29, 7, 5, C.fur], ['e', 0, -30, 8, 5, C.fur], ['e', 6, -29, 7, 5, C.fur]);
+        else main.push(['e', 0, -20, 20, 16, C.fur]);
+      }
+      // 귀·꼬리·앞쪽 부분
+      if (kind === 'cat') { back.push(['t', -9, -33, 6, 7, C.fur], ['t', 3, -33, 6, 7, C.fur], ['e', 9, -9, 4, 10, C.fur], ['e', 10, -15, 4, 6, C.fur]); }
+      else if (kind === 'bear') { back.push(['e', -7, -27, 7, 7, C.fur], ['e', 7, -27, 7, 7, C.fur]); }
+      else if (kind === 'dog') { back.push(['e', 9, -8, 4, 5, C.fur]); front.push(['e', -10, -19, 6, 13, C.dark], ['e', 10, -19, 6, 13, C.dark]); }
+      else if (kind === 'sheep') { front.push(['e', 0, -18, 14, 12, C.light], ['e', -10, -19, 7, 4, C.light], ['e', 10, -19, 7, 4, C.light]); }
+      else if (kind === 'monkey') { back.push(['e', 10, -8, 7, 7, C.fur]); main.push(['e', -11, -19, 6, 7, C.fur], ['e', 11, -19, 6, 7, C.fur]); }
+      else if (kind === 'horse') { back.push(['t', -8, -34, 5, 7, C.fur], ['t', 3, -34, 5, 7, C.fur], ['e', 9, -8, 5, 11, C.dark]); front.push(['e', 0, -13, 12, 7, C.light]); }
+      else if (kind === 'bird') { front.push(['e', -10, -13 + flap, 6, 9, C.dark], ['e', 10, -13 - flap, 6, 9, C.dark]); }
+      paint(back);
+      paint(main);
+      // 무늬 (바깥선 없이)
+      if (kind === 'cat') {
+        R(-8, -31, 3, 3, '#f6b8b8'); R(4, -31, 3, 3, '#f6b8b8');
+        R(-1, -28, 2, 3, C.dark); R(-5, -27, 2, 2, C.dark); R(3, -27, 2, 2, C.dark);
+        R(8, -13, 3, 1, C.dark); R(8, -9, 3, 1, C.dark); R(8, -5, 3, 1, C.dark);
+        ell(0, -8, 7, 6, C.light); ell(0, -16, 8, 4, C.light);
+      } else if (kind === 'bear') {
+        ell(-7, -27, 3, 3, C.light); ell(7, -27, 3, 3, C.light);
+        ell(0, -8, 8, 7, C.light); ell(0, -16, 9, 6, C.light);
+      } else if (kind === 'dog') {
+        R(3, -10, 3, 3, C.dark); ell(0, -15, 8, 5, C.light);
+      } else if (kind === 'sheep') {
+        R(-3, -27, 1, 1, '#ece4d2'); R(4, -25, 1, 1, '#ece4d2'); R(-8, -10, 1, 1, '#ece4d2'); R(6, -7, 1, 1, '#ece4d2');
+      } else if (kind === 'monkey') {
+        ell(-11, -19, 3, 4, C.light); ell(11, -19, 3, 4, C.light);
+        ell(-3, -21, 8, 8, C.light); ell(3, -21, 8, 8, C.light); ell(0, -16, 13, 8, C.light);
+        R(9, -9, 2, 2, C.light);
+        ell(0, -8, 7, 6, C.light);
+      } else if (kind === 'horse') {
+        R(-5, -2, 4, 2, C.dark); R(1, -2, 4, 2, C.dark);
+        R(-7, -32, 2, 2, '#f6c0b0'); R(4, -32, 2, 2, '#f6c0b0');
+      } else if (kind === 'bird') {
+        ell(0, -9, 12, 11, C.light);
+        R(-3, -3, 1, 3, C.acc); R(2, -3, 1, 3, C.acc); R(-4, 0, 3, 1, C.acc); R(1, 0, 3, 1, C.acc);
+      }
+      paint(front);
+      if (kind === 'horse') {
+        R(-4, -31, 8, 3, C.dark); R(-2, -33, 4, 2, C.dark); R(7, -28, 3, 11, C.dark);
+        R(-3, -15, 1, 1, C.dark); R(2, -15, 1, 1, C.dark);
+      } else if (kind === 'bird') {
+        R(-12, -9 + flap, 3, 2, '#9ccf6a'); R(9, -9 - flap, 3, 2, '#9ccf6a');
+      }
+      // 얼굴
+      var ey = kind === 'horse' ? -24 : -21;
+      [-5, 3].forEach(function(ex){
+        if (o.happy) { R(ex, ey, 2, 1, EYE); R(ex - 1, ey + 1, 1, 1, EYE); R(ex + 2, ey + 1, 1, 1, EYE); }
+        else if (o.blink) R(ex, ey + 1, 2, 1, EYE);
+        else { R(ex, ey, 2, 3, EYE); R(ex, ey, 1, 1, '#ffffff'); }
+      });
+      if (kind !== 'sheep' || true) { R(-8, -17, 3, 1, '#f2a0a0'); R(5, -17, 3, 1, '#f2a0a0'); }
+      if (kind === 'bird') {
+        R(-1, -18, 3, 2, C.acc); R(0, -16, 1, 1, '#d97a2a');
+      } else {
+        var my = kind === 'horse' ? -13 : -16;
+        if (kind === 'bear' || kind === 'dog') R(-1, -18, 3, 2, '#3a2418');
+        if (kind === 'cat') R(0, -17, 1, 1, '#e0707a');
+        if (o.sad) R(-1, my + 1, 3, 1, OL);
+        else { R(-2, my, 1, 1, OL); R(2, my, 1, 1, OL); R(-1, my + 1, 3, 2, '#c84a4a'); R(0, my + 2, 1, 1, '#f08a8a'); }
+      }
+      // 소품 (어린이부터)
+      if (!o.acc) return;
+      if (kind === 'cat' || kind === 'horse') {
+        R(-6, -13, 12, 2, C.acc); R(-4, -11, 8, 1, C.acc); R(-3, -10, 6, 1, C.acc); R(-2, -9, 4, 1, C.acc); R(-1, -8, 2, 1, C.acc);
+        R(-1, -11, 2, 1, '#ffffff');
+      } else if (kind === 'bear') {
+        R(-7, -13, 14, 3, C.acc); R(3, -11, 3, 6, C.acc); R(3, -5, 1, 1, C.acc); R(5, -5, 1, 1, C.acc); R(4, -9, 1, 2, '#d8e8b0');
+      } else if (kind === 'dog') {
+        R(-5, -13, 4, 3, C.acc); R(1, -13, 4, 3, C.acc); R(-1, -12, 2, 2, '#3f6fb0');
+        R(-4, -12, 1, 1, '#ffffff'); R(3, -12, 1, 1, '#ffffff');
+      } else if (kind === 'sheep') {
+        R(5, -31, 2, 2, C.acc); R(5, -27, 2, 2, C.acc); R(3, -29, 2, 2, C.acc); R(7, -29, 2, 2, C.acc); R(5, -29, 2, 2, '#f2c94c');
+        R(2, -27, 2, 1, '#6aa84f');
+      } else if (kind === 'monkey') {
+        R(-7, -13, 3, 8, C.acc); R(4, -13, 3, 8, C.acc); R(-6, -10, 1, 1, '#d9a92a');
+      } else if (kind === 'bird') {
+        R(-3, -13, 6, 2, '#f08aa0'); R(-1, -11, 2, 2, '#f08aa0');
+      }
+    }
     // ---------- 5) 다마고치 키우기 (서버에 저장, 실제 시간이 흐름) ----------
     var petG = (function(){
       var RATE = { food: 4, fun: 3, wash: 2 };
@@ -2787,7 +2924,7 @@ window.__SV14_BOOT = function(){
       var bob = 0, wx = 120, wtx = 120, wdir = 1, wT = 1, uiT = 0;
       function $(id){ return document.getElementById(id); }
       var kindSel = $('pet-new-kind');
-      KINDS.forEach(function(k){ var o = document.createElement('option'); o.value = k.id; o.textContent = k.label; kindSel.appendChild(o); });
+      PET_KINDS.forEach(function(k){ var o = document.createElement('option'); o.value = k.id; o.textContent = k.label; kindSel.appendChild(o); });
       function stageOf(pp){ var st2 = 0; for (var i = 0; i < STAGES.length; i++) if (pp.exp >= STAGES[i][0]) st2 = i; return st2; }
       function now3(pp){
         var h = Math.max(0, (Date.now() - new Date(pp.updated_at).getTime()) / 3600000);
@@ -2899,11 +3036,12 @@ window.__SV14_BOOT = function(){
       });
 
       // ---- 그림 ----
-      function egg(r, x, yb, wob){
+      function egg(r, x, yb, wob, kind){
+        var EC = PET_COL[kind] || { fur: '#9fc5e8', acc: '#e8a0a0', dark: '#f2c94c' };
         var rows = [4, 8, 10, 12, 12, 14, 14, 14, 14, 14, 12, 12, 10, 8];
         var ox = Math.round(Math.sin(wob) * 1.2);
         for (var i = 0; i < rows.length; i++) r(x - rows[i] / 2 + ox, yb - rows.length + i, rows[i], 1, '#fffaf0');
-        r(x - 3 + ox, yb - 10, 3, 2, '#e8a0a0'); r(x + 2 + ox, yb - 6, 2, 2, '#9fc5e8'); r(x - 4 + ox, yb - 4, 2, 2, '#f2c94c');
+        r(x - 3 + ox, yb - 10, 3, 2, EC.acc); r(x + 2 + ox, yb - 6, 2, 2, EC.fur === '#fbf6ea' ? '#e8dcc0' : EC.fur); r(x - 4 + ox, yb - 4, 2, 2, EC.dark);
         r(x - 2 + ox, yb - 13, 2, 2, '#ffffff');
         r(x - 7, yb, 14, 1, 'rgba(0,0,0,.15)');
       }
@@ -2969,17 +3107,15 @@ window.__SV14_BOOT = function(){
           var spots = [[30, 132], [208, 134], [176, 140]];
           for (var i = 0; i < dirty; i++) poop(r, spots[i][0], spots[i][1]);
           var x = Math.round(sg === 0 ? 120 : wx), yb = 124, h = 16;
-          if (sg === 0) { wx = 120; gx.save(); gx.translate(x, yb); gx.scale(1.6, 1.6); egg(r, 0, 0, bob * (v.food + v.fun > 100 ? 0.8 : 0.3)); gx.restore(); h = 24; }
+          if (sg === 0) { wx = 120; gx.save(); gx.translate(x, yb); gx.scale(1.6, 1.6); egg(r, 0, 0, bob * (v.food + v.fun > 100 ? 0.8 : 0.3), pp.kind); gx.restore(); h = 24; }
           else {
             var jump = Math.round(Math.abs(Math.sin(bob * (act ? 2 : 1))) * (act ? 5 : 2));
-            if (sg === 1) { gx.save(); gx.translate(x, yb - jump); gx.scale(1.6, 1.6); blob(r, 0, 0, look); gx.restore(); h = 16; }
-            else {
-              var k = sg === 2 ? 1.5 : 2;
-              gx.save(); gx.translate(x, yb - jump); gx.scale(k, k);
-              drawMini(r, -8, 0, look, { flip: wdir < 0, stride: !act && Math.floor(bob) % 2 === 1 });
-              gx.restore();
-              h = 22 * k;
-            }
+            var k = [0, 1, 1.5, 2][sg], md0 = mood(v)[1];
+            gx.save(); gx.translate(x, yb - jump); gx.scale(k, k);
+            petSprite(r, pp.kind, { flip: wdir < 0, acc: sg >= 2, happy: !!act || md0 === '행복해요' && Math.floor(bob / 9) % 3 === 0,
+              blink: Math.floor(bob * 1.3) % 23 === 0, sad: md0 === '시무룩해요' || md0 === '아파요', flap: bob * 2 });
+            gx.restore();
+            h = 32 * k;
           }
           if (act && act.k === 'feed') {
             var sz = Math.max(1, Math.round(act.t * 4));
