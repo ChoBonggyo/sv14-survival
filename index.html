@@ -374,6 +374,9 @@ textarea{font:.85rem/1.55 var(--mono);resize:vertical}
 .ps-item:hover:not(:disabled){border-color:var(--accent)}
 .ps-item:disabled{opacity:.45;cursor:not-allowed}
 .ps-item.on{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.ps-item.have:disabled{opacity:.7}
+.ps-sub{margin-top:6px;padding-top:8px;border-top:1px dashed var(--line)}
+.pet-wear{background:linear-gradient(135deg,#fff6fb,#f3f9ff)}
 .ps-ic{font-size:1.5rem;line-height:1.1}
 .ps-nm{font-size:.82rem;font-weight:700}
 .ps-pr{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
@@ -2156,9 +2159,15 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
           </div>
           <button type="button" id="pet-back" hidden>← 내 정원으로 돌아가기</button>
           <div class="pet-visits" id="pet-visits" hidden><b>💌 놀러 와서 하트 준 형님들</b><ol id="pet-visits-list"></ol></div>
+          <div class="pet-shop pet-wear" id="pet-wear" hidden>
+            <div class="ps-head"><b id="pw-title">👒 다마고치 꾸미기</b></div>
+            <div class="ps-items" id="pw-items"></div>
+          </div>
           <div class="pet-shop" id="pet-shop" hidden>
             <div class="ps-head"><b>🌰 밤 상점</b><span>내 밤 <b id="ps-nuts">—</b>개 · 미니홈피에서 출석하면 매일 2개</span></div>
             <div class="ps-items" id="ps-items"></div>
+            <div class="ps-head ps-sub"><b>👒 장신구</b><span>한 번 사면 내 아이들 모두 무료로 입을 수 있어요</span></div>
+            <div class="ps-items" id="ps-acc"></div>
           </div>
           <div class="pet-deco" id="pet-deco" hidden>
             <div class="ps-head"><b>🏡 정원 꾸미기</b><span id="pd-state"></span></div>
@@ -3790,6 +3799,18 @@ window.__SV14_BOOT = function(){
       { id: 'mountain', label: '산', icon: '⛰️', price: 5 },
       { id: 'house', label: '집', icon: '🏠', price: 8 }
     ];
+    var ACC = [
+      { id: 'flower', label: '꽃 머리띠', icon: '🌸', price: 3, slot: 'head' },
+      { id: 'party', label: '고깔모자', icon: '🥳', price: 2, slot: 'head' },
+      { id: 'strawhat', label: '밀짚모자', icon: '👒', price: 5, slot: 'head' },
+      { id: 'crown', label: '왕관', icon: '👑', price: 8, slot: 'head' },
+      { id: 'sunglasses', label: '선글라스', icon: '🕶️', price: 4, slot: 'face' },
+      { id: 'heartglass', label: '하트 안경', icon: '💗', price: 4, slot: 'face' },
+      { id: 'bowtie', label: '나비넥타이', icon: '🎀', price: 2, slot: 'neck' }
+    ];
+    var ACC_BY = {};
+    ACC.forEach(function(a){ ACC_BY[a.id] = a; });
+    var SLOT_NAME = { head: '머리', face: '얼굴', neck: '목' };
     var SHOP_BY = {};
     SHOP.forEach(function(it){ SHOP_BY[it.id] = it; });
     // 다마고치가 지나가지 못하는 반지름
@@ -3829,7 +3850,7 @@ window.__SV14_BOOT = function(){
       var STAGES = [[0, '알'], [4, '아기'], [40, '어린이'], [150, '어른']];
       var MAX_PETS = 3;
       var KIND_ICON = { cat: '🐱', bear: '🐻', dog: '🐶', sheep: '🐑', monkey: '🐵', horse: '🐴', bird: '🐦', turtle: '🐢' };
-      var my = { pets: [], owned: {}, garden: [] }, view = null, selId = null;
+      var my = { pets: [], owned: {}, garden: [], acc: {} }, view = null, selId = null;
       var loaded = false, busy = false, adopting = false, myNuts = null;
       var acts = {};
       var placing = null, selected = -1, saveTimer = 0, uiT = 0;
@@ -3962,6 +3983,18 @@ window.__SV14_BOOT = function(){
           b.addEventListener('click', function(){ buy(it); });
           box.appendChild(b);
         });
+        var ab = $('ps-acc'); ab.textContent = '';
+        ACC.forEach(function(it){
+          var have = !!(my.acc && my.acc[it.id]);
+          var b = el('button', 'ps-item' + (have ? ' have' : '')); b.type = 'button';
+          b.appendChild(el('span', 'ps-ic', it.icon));
+          b.appendChild(el('span', 'ps-nm', it.label));
+          b.appendChild(el('span', 'ps-pr', have ? '가지고 있어요' : '밤 ' + it.price + '개'));
+          b.disabled = have || busy || myNuts == null || myNuts < it.price;
+          b.setAttribute('aria-label', it.label + (have ? ', 이미 가지고 있음' : ' 사기, 밤 ' + it.price + '개'));
+          b.addEventListener('click', function(){ buyAcc(it); });
+          ab.appendChild(b);
+        });
       }
       function renderInv(){
         var box = $('pd-inv'), own = owned(), any = false;
@@ -4015,20 +4048,22 @@ window.__SV14_BOOT = function(){
           ol.appendChild(el('li', null, String(h.d).slice(5).replace('-', '.') + ' · ' + nameOfMember(h.giver) + '님이 ' + (pp2 ? pp2.name : '') + '에게 💗'));
         });
       }
-      function renderPanels(){ renderTabs(); renderUi(); if (isMine() && my.pets.length) { renderShop(); renderInv(); } }
+      function renderPanels(){ renderTabs(); renderUi(); if (isMine() && my.pets.length) { renderShop(); renderInv(); } renderWear(); }
 
       // ---------- 서버 ----------
       async function loadMine(){
         var sb = window.__SV14_SB;
         if (!(me && me.slug) || !sb) { loaded = true; renderPanels(); return; }
         var r = await sb.from('pets').select('*').eq('slug', me.slug).order('id', { ascending: true });
-        var g = await sb.from('gardens').select('owned,garden').eq('slug', me.slug).maybeSingle();
+        var g = await sb.from('gardens').select('owned,garden,acc').eq('slug', me.slug).maybeSingle();
+        if (g.error) g = await sb.from('gardens').select('owned,garden').eq('slug', me.slug).maybeSingle();
         var n = await sb.from('members').select('nuts').eq('slug', me.slug).maybeSingle();
         loaded = true;
         if (r.error || g.error) $('pet-msg').textContent = '다마고치 준비 중이에요. (관리자가 설정 중)';
         my.pets = r.data || [];
         my.owned = g.data && g.data.owned ? g.data.owned : {};
         my.garden = g.data && Array.isArray(g.data.garden) ? g.data.garden : [];
+        my.acc = g.data && g.data.acc ? g.data.acc : {};
         myNuts = n.data ? n.data.nuts : null;
         if (!my.pets.some(function(p2){ return p2.id === selId; })) selId = my.pets.length ? my.pets[0].id : null;
         renderPanels();
@@ -4134,6 +4169,56 @@ window.__SV14_BOOT = function(){
         my.owned[it.id] = (my.owned[it.id] || 0) + 1;
         $('pet-msg').textContent = it.icon + ' ' + it.label + ' 샀어요! "정원 꾸미기"에서 누르고 놓을 곳을 정하세요.';
         renderShop(); renderInv();
+      }
+      async function buyAcc(it){
+        if (busy || !isMine()) return;
+        busy = true; renderShop(); $('pet-msg').textContent = '';
+        var r = await window.__SV14_SB.rpc('buy_acc', { p_item: it.id });
+        busy = false;
+        if (r.error) { $('pet-msg').textContent = r.error.message; renderShop(); return; }
+        myNuts = typeof r.data === 'number' ? r.data : (myNuts || 0) - it.price;
+        my.acc[it.id] = true;
+        $('pet-msg').textContent = it.icon + ' ' + it.label + ' 샀어요! "꾸미기"에서 내 아이들에게 무료로 입혀 주세요.';
+        renderPanels();
+      }
+      async function wearAcc(pp, it){
+        if (busy || !isMine() || !pp) return;
+        var on = (pp.wear || {})[it.slot] === it.id;
+        busy = true; renderWear();
+        var r = await window.__SV14_SB.rpc('wear_acc', { p_id: pp.id, p_slot: it.slot, p_item: on ? null : it.id });
+        busy = false;
+        if (r.error) { $('pet-msg').textContent = r.error.message; renderWear(); return; }
+        pp.wear = r.data || {};
+        $('pet-msg').textContent = on ? pp.name + '이(가) ' + it.label + '을(를) 벗었어요.' : it.icon + ' ' + pp.name + '에게 ' + it.label + '을(를) 입혀 줬어요!';
+        acts[pp.id] = { k: 'pet', t: 1.2 };
+        if (W) W.burst('pet', pp.id);
+        renderPanels();
+      }
+      function wearIcons(pp){
+        var w = (pp && pp.wear) || {};
+        return ['head', 'face', 'neck'].map(function(k){ return w[k] && ACC_BY[w[k]] ? ACC_BY[w[k]].icon : ''; }).join('');
+      }
+      function renderWear(){
+        var box = $('pet-wear'), pp = selPet(), show = isMine() && !!pp && !adopting;
+        box.hidden = !show;
+        if (!show) return;
+        $('pw-title').textContent = '👒 ' + pp.name + ' 꾸미기 · 입히기는 무료';
+        var list = $('pw-items'); list.textContent = '';
+        var mine = ACC.filter(function(it){ return my.acc && my.acc[it.id]; });
+        if (!mine.length) { list.appendChild(el('p', 'pd-empty', '밤 상점에서 장신구를 사면 여기서 내 아이들에게 무료로 입혀 줄 수 있어요. 머리, 얼굴, 목에 하나씩 입을 수 있어요.')); return; }
+        var w = pp.wear || {};
+        mine.forEach(function(it){
+          var on = w[it.slot] === it.id;
+          var b = el('button', 'ps-item' + (on ? ' on' : '')); b.type = 'button';
+          b.appendChild(el('span', 'ps-ic', it.icon));
+          b.appendChild(el('span', 'ps-nm', it.label));
+          b.appendChild(el('span', 'ps-pr', on ? '입는 중 · 벗기' : SLOT_NAME[it.slot] + '에 입히기'));
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          b.disabled = busy;
+          b.addEventListener('click', function(){ wearAcc(pp, it); });
+          list.appendChild(b);
+        });
+        if (stageOf(pp) === 0) list.appendChild(el('p', 'pd-empty', '알일 때는 안 보여요. 깨어나면 바로 보여요!'));
       }
       function queueSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(function(){ saveNow().catch(function(){}); }, 500); }
       async function saveNow(){
@@ -4499,8 +4584,66 @@ window.__SV14_BOOT = function(){
               var tb = new T.Mesh(new T.ConeGeometry(0.28, 0.36, 3), mat(C.acc)); tb.rotation.x = Math.PI; tb.scale.z = 0.35; tb.position.set(0, 1.0, 1.08); body.add(tb);
             }
           }
+          R.hm = {
+            top: kind === 'bird' ? 1.22 : kind === 'turtle' ? 0.74 : kind === 'sheep' ? 1.12 : kind === 'horse' ? 1.02 : 0.92,
+            rad: kind === 'bird' ? 1.2 : kind === 'turtle' ? 0.8 : kind === 'sheep' ? 1.1 : 1.0,
+            ey: ey, ez: ez,
+            neckY: kind === 'bird' ? 0.85 : kind === 'turtle' ? 1.05 : 1.42,
+            neckZ: kind === 'bird' ? 1.12 : kind === 'turtle' ? 1.16 : 0.66
+          };
           root.scale.setScalar([1, 0.55, 0.8, 1.05][sg]);
           return R;
+        }
+        var HEARTG = null;
+        function dressPet(R, wear){
+          var hm = R.hm, head = R.head;
+          if (!hm || !head || !wear) return;
+          var top = hm.top, rad = hm.rad, hd = wear.head, fc = wear.face, nk = wear.neck;
+          if (hd === 'flower') {
+            var band = new T.Mesh(new T.TorusGeometry(rad, 0.07, 8, 28, Math.PI), mat('#f48fb1'));
+            band.scale.set(1, (top + 0.04) / rad, 1); band.position.z = 0.05; band.castShadow = true; head.add(band);
+            [[0.6, '#ff8fb0'], [Math.PI / 2, '#ffd34d'], [Math.PI - 0.6, '#ffffff']].forEach(function(q){
+              var fl = new T.Group(); fl.position.set(Math.cos(q[0]) * rad, Math.sin(q[0]) * (top + 0.04) + 0.05, 0.14); head.add(fl);
+              for (var k = 0; k < 5; k++) { var a = k / 5 * Math.PI * 2; part(fl, G.S, q[1], Math.cos(a) * 0.11, Math.sin(a) * 0.11, 0, 0.085); }
+              part(fl, G.S, '#f6a623', 0, 0, 0.05, 0.065);
+            });
+          } else if (hd === 'party') {
+            var hat = new T.Group(); hat.position.set(0.16 * rad, top - 0.1, 0); hat.rotation.z = -0.22; head.add(hat);
+            part(hat, G.CO, '#7ec8f2', 0, 0.45, 0, 0.42, 0.9, 0.42);
+            [[0.13, 0.25, 0.3], [-0.22, 0.32, 0.2], [0.06, 0.6, 0.17], [0.24, 0.18, -0.22], [-0.1, 0.2, -0.3]].forEach(function(q){ part(hat, G.S, '#ffd34d', q[0], q[1], q[2], 0.06); });
+            part(hat, G.S, '#ff6f91', 0, 0.93, 0, 0.13);
+          } else if (hd === 'strawhat') {
+            var sh = new T.Group(); sh.position.set(0, top - 0.14, -0.02); sh.rotation.x = -0.12; head.add(sh);
+            part(sh, G.CY, '#f2d27a', 0, 0, 0, rad * 1.08, 0.06, rad * 1.08);
+            part(sh, G.CY, '#f2d27a', 0, 0.22, 0, 0.56, 0.4, 0.56);
+            part(sh, G.CY, '#e4553f', 0, 0.1, 0, 0.58, 0.11, 0.58);
+          } else if (hd === 'crown') {
+            var cr = new T.Group(); cr.position.set(0, top - 0.05, 0); head.add(cr);
+            var cb = new T.Mesh(new T.CylinderGeometry(0.42, 0.4, 0.26, 18, 1, true), mat('#f6c945', { side: T.DoubleSide })); cb.position.y = 0.13; cb.castShadow = true; cr.add(cb);
+            for (var k2 = 0; k2 < 5; k2++) { var a2 = k2 / 5 * Math.PI * 2; part(cr, G.CO, '#f6c945', Math.sin(a2) * 0.4, 0.36, Math.cos(a2) * 0.4, 0.09, 0.22, 0.09); part(cr, G.S, '#ffffff', Math.sin(a2) * 0.4, 0.49, Math.cos(a2) * 0.4, 0.04); }
+            part(cr, G.S, '#e4553f', 0, 0.14, 0.42, 0.07);
+          }
+          if (fc === 'sunglasses' || fc === 'heartglass') {
+            var gz = hm.ez + 0.1, gy = hm.ey + 0.02, gc = fc === 'sunglasses' ? '#1f2328' : '#ff5c8a';
+            if (fc === 'heartglass' && !HEARTG) {
+              var hs = new T.Shape();
+              hs.moveTo(25, 25); hs.bezierCurveTo(25, 25, 20, 0, 0, 0); hs.bezierCurveTo(-30, 0, -30, 35, -30, 35);
+              hs.bezierCurveTo(-30, 55, -10, 77, 25, 95); hs.bezierCurveTo(60, 77, 80, 55, 80, 35);
+              hs.bezierCurveTo(80, 35, 80, 0, 50, 0); hs.bezierCurveTo(35, 0, 25, 25, 25, 25);
+              HEARTG = new T.ExtrudeGeometry(hs, { depth: 10, bevelEnabled: false }); HEARTG.center();
+            }
+            [-1, 1].forEach(function(sx){
+              if (fc === 'sunglasses') { part(head, G.BX, gc, sx * 0.37, gy, gz, 0.36, 0.26, 0.05); part(head, G.BX, '#6b7686', sx * 0.37 - 0.08, gy + 0.06, gz + 0.03, 0.08, 0.05, 0.01); }
+              else { var hg = new T.Mesh(HEARTG, mat(gc)); hg.position.set(sx * 0.37, gy, gz); hg.rotation.z = Math.PI; hg.scale.setScalar(0.0036); hg.castShadow = true; head.add(hg); }
+              var arm = part(head, G.BX, gc, sx * 0.6, gy + 0.04, gz - 0.25, 0.04, 0.04, 0.5); arm.rotation.y = sx * 0.35;
+            });
+            part(head, G.BX, gc, 0, gy + 0.06, gz, 0.2, 0.04, 0.04);
+          }
+          if (nk === 'bowtie') {
+            var nb = new T.Group(); nb.position.set(0, hm.neckY, hm.neckZ); R.body.add(nb);
+            [-1, 1].forEach(function(sx){ var bw = new T.Mesh(G.CO, mat('#e4553f')); bw.scale.set(0.2, 0.34, 0.16); bw.rotation.z = sx * Math.PI / 2; bw.position.set(-sx * 0.2, 0, 0); bw.castShadow = true; nb.add(bw); });
+            part(nb, G.S, '#b8322a', 0, 0, 0.04, 0.09);
+          }
         }
         // ---- 다마고치 여러 마리 ----
         var rigs = {};
@@ -4525,12 +4668,13 @@ window.__SV14_BOOT = function(){
         function syncPets(){
           var sc = scope(), list = sc && sc.pets.length ? sc.pets : [null], seen = {};
           list.forEach(function(pp, i){
-            var id = pp ? String(pp.id) : 'guest', key = pp ? pp.kind + '|' + stageOf(pp) : 'egg';
+            var id = pp ? String(pp.id) : 'guest', key = pp ? pp.kind + '|' + stageOf(pp) + '|' + JSON.stringify(pp.wear || {}) : 'egg';
             seen[id] = true;
             var e = rigs[id];
             if (!e || e.key !== key) {
               if (e) { scene.remove(e.rig.root); if (e.label) scene.remove(e.label); }
               var rg = buildPet(pp && PET_COL[pp.kind] ? pp.kind : 'cat', pp ? stageOf(pp) : 0);
+              if (pp && pp.wear && !rg.egg) dressPet(rg, pp.wear);
               scene.add(rg.root);
               var many = list.length > 4, ang = i * 2.39996, rad = 2.5 + Math.sqrt((i + 0.5) / list.length) * 11;
               var s0 = e ? e.s : { x: many ? Math.cos(ang) * rad : (i - (list.length - 1) / 2) * 3.4, z: many ? Math.sin(ang) * rad : 2, heading: 0, tx: 0, tz: 2, state: 'idle', t: 1 + i, ph: i * 1.7, blink: 2 + i };
@@ -4853,7 +4997,7 @@ window.__SV14_BOOT = function(){
           var sg = stageOf(pp), md = mood(now3(pp)), c = el('div', 'rp-card');
           c.appendChild(el('span', 'rp-icon s' + sg, sg === 0 ? '🥚' : (KIND_ICON[pp.kind] || '🐣')));
           var bd = el('div', 'rp-body');
-          bd.appendChild(el('b', null, pp.name));
+          bd.appendChild(el('b', null, pp.name + ' ' + wearIcons(pp)));
           bd.appendChild(el('span', null, STAGES[sg][1] + ' · Lv.' + (Math.floor(pp.exp / 10) + 1) + ' · ' + md[0] + ' ' + md[1]));
           bd.appendChild(el('span', 'rp-h', '💗 받은 하트 ' + heartsOf(pp.id).length + '개'));
           var row = el('div', 'rp-btns');
@@ -4879,7 +5023,7 @@ window.__SV14_BOOT = function(){
       return {
         id: 'pet', icon: '🐣', title: '다마고치 키우기', custom: true,
         desc: '알을 받아 밥 주고 놀아 주고 씻겨 주며 키워요. 한 형님이 3마리까지 키울 수 있고, 3D 정원 섬에서 함께 돌아다녀요. 밤 상점에서 산 물건으로 정원을 꾸밀 수 있어요.',
-        help: '아이들은 가끔 낮잠을 자거나 뛰고, 구르고, 점프하고, 빙글빙글 돌아요. 🏝️ 광장에서 형님들 아이를 구경하고, 다른 형님 아이에게 하루 한 번 하트를 주면 그 아이 경험치가 +3 올라요. 몇 시간마다 들러서 돌봐 주세요. 돌볼 때마다 경험치가 쌓여 알 → 아기 → 어린이 → 어른으로 자라요. 3D 화면은 끌어서 돌리고, 휠이나 두 손가락, + − 버튼으로 확대해요. 다마고치를 누르면 그 아이를 고르고 쓰다듬어요. 정원에 놓은 물건은 끌어서 옮길 수 있고, 산에는 다마고치들이 올라가요.',
+        help: '👒 밤 상점에서 장신구를 한 번 사면 내 아이들 모두에게 무료로 입힐 수 있어요. 아이들은 가끔 낮잠을 자거나 뛰고, 구르고, 점프하고, 빙글빙글 돌아요. 🏝️ 광장에서 형님들 아이를 구경하고, 다른 형님 아이에게 하루 한 번 하트를 주면 그 아이 경험치가 +3 올라요. 몇 시간마다 들러서 돌봐 주세요. 돌볼 때마다 경험치가 쌓여 알 → 아기 → 어린이 → 어른으로 자라요. 3D 화면은 끌어서 돌리고, 휠이나 두 손가락, + − 버튼으로 확대해요. 다마고치를 누르면 그 아이를 고르고 쓰다듬어요. 정원에 놓은 물건은 끌어서 옮길 수 있고, 산에는 다마고치들이 올라가요.',
         rankTitle: '형님들 다마고치',
         reset: function(){ acts = {}; view = null; placing = null; selected = -1; adopting = false; },
         enter: function(){
