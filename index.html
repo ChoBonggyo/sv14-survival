@@ -337,6 +337,31 @@ textarea{font:.85rem/1.55 var(--mono);resize:vertical}
 }
 .plaza-note{font-size:.82rem;color:var(--muted)}
 
+/* ---------- 미니게임 ---------- */
+.game-wrap{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:16px;align-items:start}
+@media (max-width:760px){.game-wrap{grid-template-columns:1fr}}
+.game-card,.game-rank{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.game-card h3,.game-rank h3{font-size:1.1rem;font-weight:700;margin:0 0 4px}
+.game-card > p{color:var(--muted);font-size:.9rem;margin:0 0 10px}
+.game-hud{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:.85rem;margin-bottom:8px}
+.game-hud b{color:var(--accent);font-size:1rem}
+.game-stage{position:relative}
+#game-canvas{display:block;width:100%;height:auto;image-rendering:pixelated;border:3px solid var(--hp-line);border-radius:8px;touch-action:none;background:#bfe3f7}
+.game-overlay{position:absolute;inset:3px;display:grid;place-content:center;gap:12px;text-align:center;background:rgba(20,28,16,.55);border-radius:6px;padding:16px}
+.game-overlay[hidden]{display:none}
+.game-overlay p{color:#fff;font-weight:700;margin:0;line-height:1.6;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.game-overlay button{justify-self:center;min-height:44px;padding:0 22px;font-size:1rem}
+.game-help{font-size:.8rem;color:var(--muted);margin:8px 0 0}
+.game-rank ol{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+.game-rank li{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;border:1px solid var(--line);font-size:.9rem}
+.game-rank li.me{border-color:var(--accent);font-weight:700}
+.game-rank .rk{font-family:var(--mono);width:1.6em;text-align:center;color:var(--muted);font-weight:700}
+.game-rank li:nth-child(1) .rk{color:#c9a227}
+.game-rank li:nth-child(2) .rk{color:#8f9aa3}
+.game-rank li:nth-child(3) .rk{color:#b0723a}
+.game-rank .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.game-rank p{font-size:.8rem;color:var(--muted);margin:8px 0 0}
+.game-rank p:empty{display:none}
 /* ---------- log timeline ---------- */
 .log{
   list-style:none;
@@ -841,7 +866,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
     <a class="brand" href="#top">SV16 <b>→</b> SV14 · 생존기</a>
     <ul>
       <li><a href="#plaza">지도</a></li>
-      <li><a href="#log">생존일지</a></li>
+      <li><a href="#games">미니게임</a></li>
       <li><a href="#members">형님들 미니홈피</a></li>
       <li><a href="#rules">생존 수칙</a></li>
       <li><a href="#tools">킹샷 도구</a></li>
@@ -860,7 +885,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
     </div>
     <h1>16서버 형님들의<br>14서버 생존기<span class="bang">!!</span></h1>
     <p class="lead">16서버에서 같이 굴렀던 형님들이 14서버로 넘어와 버티는 이야기. 사냥터 자리 싸움부터 길드 창설까지, 하루하루 생존 기록을 남깁니다.</p>
-    <div class="draft"><span class="ex">예시</span> 명단·수칙·입성 시기(2026년 7월 중순)는 실제 내용입니다. 생존일지 글은 아직 예시이고, 미니홈피는 각자 꾸미는 대로 채워지고 있어요.</div>
+    <div class="draft"><span class="ex">예시</span> 명단·수칙·입성 시기(2026년 7월 중순)는 실제 내용입니다. 미니홈피는 각자 꾸미는 대로 채워지고 있어요.</div>
   </div>
 </header>
 
@@ -922,43 +947,28 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
     </div>
   </section>
 
-  <section id="log">
+  <section id="games">
     <div class="sec-head">
-      <h2>생존일지 <span class="ex">예시</span></h2>
-      <p class="desc">오래된 기록이 위, 최신 기록이 아래. 주황 점이 가장 최근 기록입니다.</p>
+      <h2>미니게임</h2>
+      <p class="desc">쉬는 시간에 한 판. 가입한 형님 점수는 순위표에 올라갑니다.</p>
     </div>
-    <ol class="log">
-      <li class="entry">
-        <div class="stamp"><span class="day">기록 01</span><time datetime="2026-07">2026년 7월 중순</time></div>
-        <h3>14서버 입성</h3>
-        <p>16서버 짐 싸서 14서버로 넘어왔다. 아는 사람 하나 없고 거래소 시세는 딴 세상. 일단 다 같이 마을 광장에 모여 단체 사진부터 찍었다.</p>
-        <div class="meta"><span class="tag">이주</span><span class="tag">7월 중순</span><span class="by">기록: 큰형님</span></div>
-      </li>
-      <li class="entry">
-        <div class="stamp"><span class="day">기록 02</span><time datetime="2026-07">2026년 7월 하순</time></div>
-        <h3>사냥터 자리 전쟁</h3>
-        <p>16서버에서 우리 자리였던 느낌의 사냥터에 현지 길드가 떡하니. 눈치 보다가 옆 구역으로 조용히 후퇴. 형님들 멘탈 체크 완료, 아직은 괜찮다.</p>
-        <div class="meta"><span class="tag">사냥터</span><span class="tag">후퇴</span><span class="by">기록: 둘째형님</span></div>
-      </li>
-      <li class="entry">
-        <div class="stamp"><span class="day">기록 03</span><time datetime="2026-08">2026년 8월 초</time></div>
-        <h3>길드 창설</h3>
-        <p>드디어 길드를 만들었다. 이름은 투표 끝에 '16서버출신'. 길드 창고에 첫 기부는 막내가 했다.</p>
-        <div class="meta"><span class="tag">길드</span><span class="tag">투표</span><span class="by">기록: 막내</span></div>
-      </li>
-      <li class="entry">
-        <div class="stamp"><span class="day">기록 04</span><time datetime="2026-08">2026년 8월 중순</time></div>
-        <h3>첫 보스 레이드 성공</h3>
-        <p>현지 분들과 합동 레이드. 두 번 전멸하고 세 번째에 잡았다. 보상 분배는 주사위, 큰형님이 또 꼴찌.</p>
-        <div class="meta"><span class="tag">레이드</span><span class="tag">합동</span><span class="by">기록: 셋째형님</span></div>
-      </li>
-      <li class="entry latest">
-        <div class="stamp"><span class="day">기록 05</span><time datetime="2026-09">2026년 9월</time></div>
-        <h3>형님 한 분 복귀</h3>
-        <p>16서버에 남아 있던 형님 한 분이 결국 넘어오셨다. "거기 이제 사람 없다"는 한마디. 생존 인원 한 명 추가.</p>
-        <div class="meta"><span class="tag">복귀</span><span class="tag">인원</span><span class="by">기록: 큰형님</span></div>
-      </li>
-    </ol>
+    <div class="game-wrap">
+      <div class="game-card">
+        <h3>밤 받기</h3>
+        <p>하늘에서 떨어지는 밤을 받으세요. 밤은 1점, 황금밤은 5점. 가시 밤송이에 맞으면 목숨이 하나 줄어요.</p>
+        <div class="game-hud" aria-live="polite"><span>점수 <b id="g-score">0</b></span><span>목숨 <b id="g-lives">♥♥♥</b></span><span>내 최고 <b id="g-best">0</b></span></div>
+        <div class="game-stage">
+          <canvas id="game-canvas" width="720" height="450" tabindex="0" role="img" aria-label="밤 받기 게임 화면"></canvas>
+          <div class="game-overlay" id="g-overlay"><p id="g-msg">떨어지는 밤을 받아라!</p><button type="button" class="primary" id="g-start">시작하기</button></div>
+        </div>
+        <p class="game-help">조작: 컴퓨터는 마우스를 좌우로 움직이거나 ← → 방향키(A·D). 휴대폰은 화면을 누른 채 좌우로 밀기. Esc는 잠깐 멈춤.</p>
+      </div>
+      <aside class="game-rank" aria-label="밤 받기 순위표">
+        <h3>순위표 TOP 10</h3>
+        <ol id="g-rank"></ol>
+        <p id="g-rank-note">순위표를 불러오는 중...</p>
+      </aside>
+    </div>
   </section>
 
   <section id="members">
@@ -2371,6 +2381,181 @@ window.__SV14_BOOT = function(){
   // ===== 화면 전환 =====
   var homeView = document.getElementById('view-home');
   var roomView = document.getElementById('view-room');
+
+  // ===== 미니게임: 밤 받기 =====
+  (function(){
+    var gc = document.getElementById('game-canvas');
+    if (!gc) return;
+    var gx = gc.getContext('2d');
+    var GW = 240, GH = 150, GS = gc.width / GW, GROUND = 134;
+    var overlay = document.getElementById('g-overlay'), gMsg = document.getElementById('g-msg'), gStart = document.getElementById('g-start');
+    var elScore = document.getElementById('g-score'), elLives = document.getElementById('g-lives'), elBest = document.getElementById('g-best');
+    var rankEl = document.getElementById('g-rank'), rankNote = document.getElementById('g-rank-note');
+    var me = window.__SV14_ME || null;
+    var mine = me && me.slug ? MEMBERS.filter(function(m){ return m.slug === me.slug; })[0] : null;
+    var look = mine ? mine.room : Object.assign({}, defaultRoom(0), { kind: 'chick', hold: 'none' });
+    var best = 0;
+    try { best = parseInt(localStorage.getItem('sv14-nut-best') || '0', 10) || 0; } catch (e) {}
+    var st = 'ready', px = GW / 2 - 8, tx = null, dir = 1, moving = false;
+    var items = [], pops = [], score = 0, lives = 3, t = 0, spawnT = 0, hurtT = 0, stepT = 0, last = 0, raf = 0, keys = {};
+
+    function hud(){
+      elScore.textContent = score;
+      elLives.textContent = lives > 0 ? new Array(lives + 1).join('♥') : '—';
+      elBest.textContent = best;
+    }
+    function nut(r, x, y, gold){
+      var c = gold ? ['#e0a92a', '#f7d35c', '#8a6208', '#fff1b8'] : ['#7a4524', '#9a6238', '#4f2a14', '#e2c79a'];
+      r(x - 3, y - 2, 7, 5, c[0]); r(x - 2, y - 4, 5, 2, c[0]); r(x, y - 6, 1, 2, c[2]);
+      r(x - 2, y - 3, 2, 2, c[1]); r(x - 3, y + 2, 7, 2, c[3]);
+    }
+    function burr(r, x, y){
+      r(x - 3, y - 3, 7, 7, '#6aa84f'); r(x - 2, y - 2, 2, 2, '#8fcf6a');
+      var c = '#3f7a2f';
+      r(x - 5, y, 2, 1, c); r(x + 4, y, 2, 1, c); r(x, y - 5, 1, 2, c); r(x, y + 4, 1, 2, c);
+      r(x - 4, y - 4, 1, 1, c); r(x + 4, y - 4, 1, 1, c); r(x - 4, y + 4, 1, 1, c); r(x + 4, y + 4, 1, 1, c);
+    }
+    function scene(r){
+      r(0, 0, GW, GH, '#bfe3f7'); r(0, 0, GW, 34, '#a9d6f2');
+      puff(r, 20, 14, 22); puff(r, 150, 24, 18); puff(r, 200, 8, 14);
+      tri(r, 46, GROUND, 100, 34, '#a8d096'); tri(r, 176, GROUND, 130, 44, '#94c482');
+      r(0, GROUND, GW, GH - GROUND, '#7cb265'); r(0, GROUND, GW, 2, '#5f9a4c'); r(0, GROUND + 9, GW, GH - GROUND - 9, '#8a6a45');
+      for (var i = 6; i < GW; i += 22) r(i, GROUND + 4, 3, 1, '#6aa456');
+    }
+    function draw(){
+      gx.setTransform(GS, 0, 0, GS, 0, 0);
+      gx.imageSmoothingEnabled = false;
+      var r = rectFn(gx);
+      scene(r);
+      items.forEach(function(it){
+        var x = Math.round(it.x), y = Math.round(it.y);
+        if (it.k === 'burr') burr(r, x, y); else nut(r, x, y, it.k === 'gold');
+      });
+      if (!(hurtT > 0 && Math.floor(hurtT * 10) % 2)) {
+        drawMini(r, Math.round(px), GROUND + 2, look, { flip: dir < 0, stride: st === 'play' && moving && Math.floor(stepT * 8) % 2 === 1 });
+      }
+      gx.font = 'bold 8px sans-serif'; gx.textAlign = 'center';
+      pops.forEach(function(p){ gx.globalAlpha = Math.max(0, Math.min(1, p.life)); gx.fillStyle = p.c; gx.fillText(p.s, p.x, p.y); });
+      gx.globalAlpha = 1;
+    }
+    function update(dt){
+      t += dt; stepT += dt;
+      var sp = 130, dx = 0, ox = px;
+      if (keys.left) dx -= 1;
+      if (keys.right) dx += 1;
+      if (dx) { px += dx * sp * dt; tx = null; }
+      else if (tx != null) { var d = tx - (px + 8); if (Math.abs(d) > 1) px += Math.max(-sp * dt, Math.min(sp * dt, d)); }
+      px = Math.max(0, Math.min(GW - 16, px));
+      moving = Math.abs(px - ox) > 0.01;
+      if (px - ox > 0.01) dir = 1; else if (px - ox < -0.01) dir = -1;
+      spawnT -= dt;
+      if (spawnT <= 0) {
+        spawnT = Math.max(0.28, 0.9 - t * 0.012) * (0.7 + Math.random() * 0.6);
+        var roll = Math.random();
+        var k = roll < Math.min(0.32, 0.16 + t * 0.003) ? 'burr' : (roll > 0.92 ? 'gold' : 'nut');
+        items.push({ x: 8 + Math.random() * (GW - 16), y: -8, vy: 38 + Math.min(70, t * 1.6) + Math.random() * 22, k: k });
+      }
+      if (hurtT > 0) hurtT -= dt;
+      for (var i = items.length - 1; i >= 0; i--) {
+        var it = items[i];
+        it.y += it.vy * dt;
+        if (it.x >= px - 3 && it.x <= px + 19 && it.y >= GROUND - 22 && it.y <= GROUND) {
+          items.splice(i, 1);
+          if (it.k === 'burr') {
+            if (hurtT <= 0) { lives--; hurtT = 1.2; pops.push({ x: it.x, y: it.y - 4, s: '아야!', c: '#c0392b', life: 1 }); }
+          } else {
+            var g = it.k === 'gold' ? 5 : 1;
+            score += g;
+            pops.push({ x: it.x, y: it.y - 4, s: '+' + g, c: it.k === 'gold' ? '#a87a00' : '#5a3018', life: 1 });
+          }
+          hud();
+          if (lives <= 0) { gameOver(); return; }
+        } else if (it.y > GH + 8) items.splice(i, 1);
+      }
+      for (var j = pops.length - 1; j >= 0; j--) { pops[j].y -= 14 * dt; pops[j].life -= dt * 1.2; if (pops[j].life <= 0) pops.splice(j, 1); }
+    }
+    function loop(ts){
+      raf = 0;
+      if (st !== 'play') return;
+      if (homeView.hidden || document.hidden) { pause(); return; }
+      var dt = Math.min(0.05, Math.max(0, (ts - last) / 1000)); last = ts;
+      update(dt); draw();
+      if (st === 'play') raf = requestAnimationFrame(loop);
+    }
+    function showOverlay(msg, btn){ gMsg.textContent = msg; gStart.textContent = btn; overlay.hidden = false; }
+    function start(){
+      if (st !== 'pause') {
+        items = []; pops = []; score = 0; lives = 3; t = 0; spawnT = 0.6; hurtT = 0; px = GW / 2 - 8; tx = null;
+      }
+      st = 'play'; keys = {};
+      hud(); overlay.hidden = true;
+      try { gc.focus({ preventScroll: true }); } catch (e) {}
+      last = performance.now();
+      if (!raf) raf = requestAnimationFrame(loop);
+    }
+    function pause(){
+      if (st !== 'play') return;
+      st = 'pause'; keys = {};
+      showOverlay('잠깐 멈췄어요. 지금 ' + score + '점', '계속하기');
+    }
+    function gameOver(){
+      st = 'over'; draw();
+      var nb = score > best;
+      if (nb) { best = score; try { localStorage.setItem('sv14-nut-best', String(best)); } catch (e) {} }
+      hud();
+      var msg = '끝! ' + score + '점' + (nb && score > 0 ? ' · 내 최고 기록!' : '');
+      if (!(me && me.slug)) msg += ' (로그인하면 순위표에 올라가요)';
+      showOverlay(msg, '다시 하기');
+      if (me && me.slug && score > 0 && window.__SV14_SB) {
+        window.__SV14_SB.rpc('submit_score', { p_game: 'nut', p_score: score }).then(function(r2){ if (!r2.error) loadRank(); }, function(){});
+      }
+    }
+    function nameOfMember(sl){ var m = MEMBERS.filter(function(x){ return x.slug === sl; })[0]; return m ? m.name : sl; }
+    async function loadRank(){
+      var sb = window.__SV14_SB;
+      if (!sb) { rankNote.textContent = '순위표를 불러오지 못했어요.'; return; }
+      var r = await sb.from('game_scores').select('slug,best').eq('game', 'nut').order('best', { ascending: false }).limit(10);
+      rankEl.textContent = '';
+      if (r.error) { rankNote.textContent = '순위표 준비 중이에요.'; return; }
+      if (!r.data.length) { rankNote.textContent = '아직 기록이 없어요. 첫 1등을 노려 보세요!'; return; }
+      rankNote.textContent = me && me.slug ? '' : '로그인한 형님 점수만 올라가요.';
+      r.data.forEach(function(row, i){
+        var li = el('li', me && row.slug === me.slug ? 'me' : null);
+        li.appendChild(el('span', 'rk', String(i + 1)));
+        li.appendChild(el('span', 'nm', nameOfMember(row.slug)));
+        li.appendChild(el('b', null, row.best + '점'));
+        rankEl.appendChild(li);
+        if (me && row.slug === me.slug && row.best > best) { best = row.best; hud(); }
+      });
+    }
+    function isLeft(k){ return k === 'ArrowLeft' || k === 'a' || k === 'A'; }
+    function isRight(k){ return k === 'ArrowRight' || k === 'd' || k === 'D'; }
+    window.addEventListener('keydown', function(e){
+      if (st !== 'play') return;
+      if (isLeft(e.key)) { keys.left = true; e.preventDefault(); }
+      else if (isRight(e.key)) { keys.right = true; e.preventDefault(); }
+      else if (e.key === 'Escape') pause();
+    });
+    window.addEventListener('keyup', function(e){
+      if (isLeft(e.key)) keys.left = false;
+      if (isRight(e.key)) keys.right = false;
+    });
+    function toLogical(e){ var b = gc.getBoundingClientRect(); return (e.clientX - b.left) / b.width * GW; }
+    var dragging = false;
+    gc.addEventListener('pointerdown', function(e){
+      if (st !== 'play') return;
+      dragging = true; tx = toLogical(e);
+      try { gc.setPointerCapture(e.pointerId); } catch (er) {}
+    });
+    gc.addEventListener('pointermove', function(e){ if (st === 'play' && (dragging || e.pointerType === 'mouse')) tx = toLogical(e); });
+    gc.addEventListener('pointerup', function(){ dragging = false; });
+    gc.addEventListener('pointercancel', function(){ dragging = false; });
+    gStart.addEventListener('click', start);
+    document.addEventListener('visibilitychange', function(){ if (document.hidden) pause(); });
+    hud(); draw();
+    showOverlay('떨어지는 밤을 받아라! 황금밤은 5점, 가시 밤송이는 피하세요.', '시작하기');
+    loadRank().catch(function(){ rankNote.textContent = '순위표를 불러오지 못했어요.'; });
+  })();
 
   // ===== 형님들 전국 지도 (360x380 논리 픽셀, 2배 확대) =====
   var plazaCanvas = document.getElementById('plaza-canvas');
