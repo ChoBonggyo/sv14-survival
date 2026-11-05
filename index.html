@@ -931,6 +931,63 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   .gj-bob,.gj-leaf,.gj-chew,.gj-paper,.gj-stage[data-face] .gj-lid,.gj-stage[data-face] .gj-bob{animation:none!important}
 }
 
+/* ===== 그림 맞히기 ===== */
+.dr-page{padding-top:18px;padding-bottom:40px}
+.dr-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.dr-headline h2{font-family:var(--display);font-weight:400;font-size:1.6rem;margin:0 0 4px}
+.dr-headline p{margin:0 0 14px;color:var(--muted)}
+.dr-bar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px;padding:10px 14px;border-radius:12px;background:var(--hero-bg);color:var(--hero-fg)}
+.dr-word{font-weight:700;font-size:1.1rem;letter-spacing:.04em;word-break:keep-all}
+.dr-timer{font-family:var(--mono);font-weight:600;white-space:nowrap}
+.dr-timer.low{color:#ff9d7a}
+.dr-main{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;align-items:start}
+.dr-canvas-wrap{position:relative;border:3px solid var(--hp-line);border-radius:12px;overflow:hidden;background:#fff}
+#dr-canvas{display:block;width:100%;height:auto;touch-action:none;background:#fff}
+#dr-canvas.can{cursor:crosshair}
+.dr-over{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(29,33,23,.45);padding:12px}
+.dr-over[hidden]{display:none}
+.dr-over-box{background:var(--surface);color:var(--fg);border-radius:14px;padding:18px 20px;text-align:center;max-width:360px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.dr-over-box b{display:block;font-family:var(--display);font-weight:400;font-size:1.3rem;margin-bottom:6px}
+.dr-over-box p{margin:6px 0}
+.dr-over-box button{min-height:44px;padding:0 22px;border-radius:12px;font:inherit;font-weight:700;cursor:pointer;margin-top:6px}
+.dr-dim{color:var(--muted);font-size:.88rem}
+.dr-choices{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+.dr-choices button{min-height:48px;padding:0 18px;border-radius:12px;border:2px solid var(--accent);background:#fff;color:var(--accent);font:inherit;font-weight:700;font-size:1.05rem;cursor:pointer;margin:0}
+.dr-final{text-align:left;margin:6px auto;padding-left:22px;font-weight:700}
+.dr-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.dr-tools[hidden]{display:none}
+.dr-colors,.dr-sizes{display:flex;gap:5px;flex-wrap:wrap}
+.dr-color{width:32px;height:32px;border-radius:50%;border:2px solid var(--line);cursor:pointer;font-size:14px;padding:0}
+.dr-color.on{outline:3px solid var(--accent);outline-offset:2px}
+.dr-size{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.dr-size i{display:block;border-radius:50%;background:#222}
+.dr-size.on{border:2px solid var(--accent)}
+#dr-wipe{min-height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:inherit;font:inherit;cursor:pointer}
+.dr-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.dr-pbox{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--hp-bg)}
+.dr-players{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+.dr-players li{display:flex;justify-content:space-between;gap:8px;font-size:.92rem}
+.dr-players li.me{font-weight:700;color:var(--accent)}
+.dr-players .dr-none{color:var(--muted)}
+.dr-chat{display:flex;flex-direction:column;gap:8px}
+.dr-log{height:300px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--hp-bg);display:flex;flex-direction:column;gap:4px}
+.dr-log p{margin:0;font-size:.9rem;line-height:1.45;overflow-wrap:anywhere}
+.dr-msg b{margin-right:2px}
+.dr-msg.me b{color:var(--accent)}
+.dr-sys{color:var(--muted);font-size:.84rem!important}
+.dr-sys.ok{color:#2f8a3a;font-weight:700}
+.dr-sys.ans{color:#2f5fb0;font-weight:700}
+.dr-sys.hint{color:#b0742f;font-weight:700}
+.dr-form{display:flex;gap:6px}
+.dr-form input{flex:1;min-width:0;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:12px;font:inherit;background:#fff;color:#1d2117}
+.dr-form button{min-height:44px;padding:0 14px;border-radius:12px;font:inherit;font-weight:700;cursor:pointer}
+.dr-note{margin:12px 0 0;font-size:.82rem;color:var(--muted)}
+@media (max-width:760px){
+  .dr-main{grid-template-columns:1fr}
+  .dr-log{height:200px}
+  .dr-card{padding:14px}
+}
+
 /* ---------- 로그인 ---------- */
 .auth-link{font-weight:700}
 .auth-dlg{border:1px solid var(--line);border-radius:14px;padding:0;background:var(--surface);color:var(--fg);width:min(400px,calc(100vw - 32px));box-shadow:0 20px 60px rgba(0,0,0,.3)}
@@ -1566,6 +1623,466 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   if (mini && svg) mini.appendChild(svg.cloneNode(true));
 
   window.__SV14_GJ = { show: function(){ setFace('idle'); status.textContent = '버리고 싶은 말을 주세요!'; setTimeout(function(){ input.focus({ preventScroll: true }); }, 50); } };
+})();
+</script>
+</div>
+
+<div id="view-draw" hidden>
+  <div class="wrap dr-page">
+    <div class="room-top"><a href="#games">← 미니게임 목록으로</a></div>
+    <div class="dr-card">
+      <div class="dr-headline">
+        <h2>🎨 그림 맞히기</h2>
+        <p>한 형님이 그림을 그리면 나머지 형님들이 채팅으로 맞혀요. 지금 이 페이지에 들어와 있는 형님들끼리 실시간으로 함께해요.</p>
+      </div>
+      <div class="dr-bar">
+        <div class="dr-word" id="dr-word" aria-live="polite">형님들을 기다리는 중</div>
+        <div class="dr-timer" id="dr-timer"></div>
+      </div>
+      <div class="dr-main">
+        <div class="dr-board">
+          <div class="dr-canvas-wrap">
+            <canvas id="dr-canvas" width="800" height="560" aria-label="그림판"></canvas>
+            <div class="dr-over" id="dr-over"></div>
+          </div>
+          <div class="dr-tools" id="dr-tools" hidden>
+            <div class="dr-colors" id="dr-colors" role="group" aria-label="색"></div>
+            <div class="dr-sizes" id="dr-sizes" role="group" aria-label="굵기"></div>
+            <button type="button" id="dr-wipe">🗑️ 다 지우기</button>
+          </div>
+        </div>
+        <div class="dr-side">
+          <div class="dr-pbox"><b>참가자</b><ol class="dr-players" id="dr-players"></ol></div>
+          <div class="dr-chat">
+            <div class="dr-log" id="dr-log" aria-live="polite"></div>
+            <form class="dr-form" id="dr-form">
+              <label class="sr-only" for="dr-in">정답 또는 채팅</label>
+              <input type="text" id="dr-in" maxlength="40" autocomplete="off" placeholder="정답이나 하고 싶은 말을 써 주세요">
+              <button type="submit" class="primary" id="dr-send">보내기</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <p class="dr-note">점수: 먼저 맞힌 순서대로 5·4·3점, 그다음부터 2점. 그리는 형님은 한 명 맞힐 때마다 2점. 반쯤 지나면 첫 글자 힌트가 나와요. 그림과 채팅은 저장되지 않아요.</p>
+    </div>
+  </div>
+<script>
+// ===== 그림 맞히기: 한 명이 그리고 나머지가 맞히는 실시간 게임 (Supabase Realtime, 저장 안 함) =====
+(function(){
+  var view = document.getElementById('view-draw');
+  if (!view) return;
+  function $(id){ return document.getElementById(id); }
+  function el(t, c, txt){ var e = document.createElement(t); if (c) e.className = c; if (txt != null) e.textContent = txt; return e; }
+  var WORDS = ('사과 바나나 수박 포도 딸기 당근 옥수수 고구마 피자 치킨 라면 햄버거 김밥 떡볶이 아이스크림 케이크 도넛 계란후라이 ' +
+    '고양이 강아지 토끼 거북이 기린 코끼리 펭귄 문어 상어 고래 돼지 원숭이 사자 호랑이 뱀 개구리 나비 달팽이 거미 부엉이 공룡 ' +
+    '자동차 비행기 기차 자전거 배 잠수함 로켓 헬리콥터 버스 트럭 오토바이 ' +
+    '우산 안경 시계 가방 모자 신발 양말 장갑 열쇠 가위 연필 책 컴퓨터 휴대폰 텔레비전 냉장고 선풍기 침대 의자 칫솔 ' +
+    '해 달 별 구름 번개 무지개 눈사람 화산 산 바다 섬 나무 꽃 선인장 버섯 해바라기 크리스마스트리 ' +
+    '성 왕관 칼 방패 활 대포 용 유령 로봇 해골 마법사 보물상자 깃발 투구 ' +
+    '축구공 농구 야구 수영 스키 낚시 볼링 기타 피아노 드럼 마이크 카메라 풍선 선물 편지 ' +
+    '집 학교 병원 교회 등대 다리 신호등 엘리베이터 화장실 텐트 쓰레기통 밤송이 다마고치').split(' ');
+  var PAL = ['#222222', '#e23d3d', '#f28c28', '#f5d000', '#3fae4a', '#2f7de1', '#8e4fd6', '#8a5a35', '#ff8fb0', '#ffffff'];
+  var SIZES = [5, 12, 28];
+  var DRAW_SEC = 80, PICK_SEC = 12, RESULT_SEC = 6;
+
+  var cv = $('dr-canvas'), cx = cv.getContext('2d'), CW = cv.width, CH = cv.height;
+  var over = $('dr-over'), logEl = $('dr-log'), input = $('dr-in'), tools = $('dr-tools');
+  var ch = null, me = null, joined = false, timerI = 0;
+  var players = [];
+  var S = blank();
+  var lastStateAt = 0, endsAt = 0, sentAt = 0;
+  var myWord = '', choices = null, hinted = false;
+  var strokes = [], byId = {}, pending = null, drawing = null, flushT = 0;
+  var tool = { c: 0, w: 1 };
+
+  function blank(){ return { phase: 'wait', round: 0, total: 0, drawer: null, dAt: 0, len: 0, hint: '', salt: '', hash: '', left: 0, scores: {}, got: {}, word: '', seq: 0 }; }
+  function now(){ return Date.now(); }
+  function myslug(){ return me && me.slug; }
+  function nameOf(sl){ var m = (window.__SV14_MEMBERS || []).filter(function(x){ return x.slug === sl; })[0]; return m ? m.name : (sl || '?'); }
+  function host(){ return players.length ? players[0].slug : null; }
+  function amHost(){ return !!myslug() && host() === myslug(); }
+  function amDrawer(){ return !!myslug() && S.drawer === myslug(); }
+  function chars(s){ return Array.from(s); }
+  function norm(s){ return String(s || '').replace(/[\s.,!?~'"…·\-_]/g, '').toLowerCase(); }
+  async function sha(s){
+    var b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+    return Array.from(new Uint8Array(b)).map(function(x){ return (x < 16 ? '0' : '') + x.toString(16); }).join('');
+  }
+
+  // ---------- 그림 ----------
+  function clearCanvas(){ cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, CW, CH); }
+  function drawStroke(s, from){
+    var p = s.p, n = p.length / 2;
+    if (!n) return;
+    cx.strokeStyle = PAL[s.c] || '#222'; cx.fillStyle = cx.strokeStyle;
+    cx.lineWidth = SIZES[s.w] || 5; cx.lineCap = 'round'; cx.lineJoin = 'round';
+    if (n === 1 || (from === 0 && n === 1)) { cx.beginPath(); cx.arc(p[0] * CW, p[1] * CH, cx.lineWidth / 2, 0, Math.PI * 2); cx.fill(); return; }
+    var i0 = Math.max(1, from || 1);
+    cx.beginPath(); cx.moveTo(p[(i0 - 1) * 2] * CW, p[(i0 - 1) * 2 + 1] * CH);
+    for (var i = i0; i < n; i++) cx.lineTo(p[i * 2] * CW, p[i * 2 + 1] * CH);
+    cx.stroke();
+  }
+  function redraw(){ clearCanvas(); strokes.forEach(function(s){ drawStroke(s, 0); }); }
+  function wipe(){ strokes = []; byId = {}; drawing = null; pending = null; redraw(); }
+  function addSeg(m){
+    var s = byId[m.id];
+    if (!s) { s = { id: m.id, c: m.c, w: m.w, p: [] }; byId[m.id] = s; strokes.push(s); }
+    var from = s.p.length / 2;
+    for (var i = 0; i < m.p.length; i++) s.p.push(m.p[i]);
+    drawStroke(s, from === 0 ? 0 : from);
+  }
+  function posOf(e){
+    var r = cv.getBoundingClientRect();
+    return [Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (e.clientY - r.top) / r.height))];
+  }
+  function r4(v){ return Math.round(v * 10000) / 10000; }
+  function canDraw(){ return amDrawer() && S.phase === 'draw'; }
+  cv.addEventListener('pointerdown', function(e){
+    if (!canDraw()) return;
+    e.preventDefault();
+    try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+    var q = posOf(e), id = Math.random().toString(36).slice(2, 9);
+    drawing = { id: id, c: tool.c, w: tool.w, p: [r4(q[0]), r4(q[1])] };
+    byId[id] = drawing; strokes.push(drawing);
+    drawStroke(drawing, 0);
+    pending = { id: id, c: tool.c, w: tool.w, p: [r4(q[0]), r4(q[1])] };
+  });
+  cv.addEventListener('pointermove', function(e){
+    if (!drawing || !canDraw()) return;
+    var q = posOf(e), p = drawing.p, lx = p[p.length - 2], ly = p[p.length - 1];
+    if (Math.abs(q[0] - lx) + Math.abs(q[1] - ly) < 0.004) return;
+    var from = p.length / 2;
+    p.push(r4(q[0]), r4(q[1]));
+    drawStroke(drawing, from);
+    if (!pending) pending = { id: drawing.id, c: drawing.c, w: drawing.w, p: [] };
+    pending.p.push(r4(q[0]), r4(q[1]));
+  });
+  function endStroke(){ if (drawing) { drawing = null; flush(); } }
+  cv.addEventListener('pointerup', endStroke);
+  cv.addEventListener('pointercancel', endStroke);
+  function flush(){ if (pending && pending.p.length) { send('seg', pending, true); } pending = drawing ? { id: drawing.id, c: drawing.c, w: drawing.w, p: [] } : null; }
+
+  // 도구
+  PAL.forEach(function(c, i){
+    var b = el('button', 'dr-color'); b.type = 'button'; b.style.background = c; b.setAttribute('aria-label', i === PAL.length - 1 ? '지우개' : '색 ' + (i + 1));
+    if (i === PAL.length - 1) b.textContent = '🧽';
+    b.addEventListener('click', function(){ tool.c = i; renderTools(); });
+    $('dr-colors').appendChild(b);
+  });
+  SIZES.forEach(function(w, i){
+    var b = el('button', 'dr-size'); b.type = 'button'; b.setAttribute('aria-label', ['가는', '보통', '굵은'][i] + ' 펜');
+    var dot = el('i'); dot.style.width = dot.style.height = Math.max(4, w * 0.7) + 'px'; b.appendChild(dot);
+    b.addEventListener('click', function(){ tool.w = i; renderTools(); });
+    $('dr-sizes').appendChild(b);
+  });
+  $('dr-wipe').addEventListener('click', function(){ if (canDraw()) send('clear', {}); });
+  function renderTools(){
+    tools.hidden = !canDraw();
+    var cs = $('dr-colors').children, ss = $('dr-sizes').children;
+    for (var i = 0; i < cs.length; i++) cs[i].classList.toggle('on', i === tool.c);
+    for (var j = 0; j < ss.length; j++) ss[j].classList.toggle('on', j === tool.w);
+    cv.classList.toggle('can', canDraw());
+  }
+
+  // ---------- 통신 ----------
+  function send(ev, p, noSelf){
+    if (ch && joined) { try { ch.send({ type: 'broadcast', event: ev, payload: p }); } catch (e) {} }
+    if (!noSelf) handle(ev, p);
+  }
+  function pubState(){
+    S.left = Math.max(0, Math.round((endsAt - now()) / 100) / 10);
+    S.seq++; sentAt = now();
+    var c = JSON.parse(JSON.stringify(S));
+    send('state', c, true);
+    lastStateAt = now();
+  }
+  function sendSync(to){
+    var part = [], size = 0, parts = [];
+    strokes.forEach(function(s){ part.push(s); size += s.p.length; if (size > 6000) { parts.push(part); part = []; size = 0; } });
+    parts.push(part);
+    parts.forEach(function(pp, i){ setTimeout(function(){ send('sync', { to: to, part: i, st: pp }, true); }, i * 160); });
+  }
+  function sys(text, cls){ var p = el('p', 'dr-sys' + (cls ? ' ' + cls : ''), text); logEl.appendChild(p); trimLog(); }
+  function chatLine(sl, text){
+    var p = el('p', 'dr-msg' + (sl === myslug() ? ' me' : ''));
+    p.appendChild(el('b', null, nameOf(sl))); p.appendChild(document.createTextNode(' ' + text));
+    logEl.appendChild(p); trimLog();
+  }
+  function trimLog(){ while (logEl.children.length > 120) logEl.removeChild(logEl.firstChild); logEl.scrollTop = logEl.scrollHeight; }
+
+  function handle(ev, p){
+    var t = now();
+    if (ev === 'hello') {
+      if (p.from === myslug()) return;
+      if (amDrawer() && (S.phase === 'pick' || S.phase === 'draw' || S.phase === 'result')) { pubState(); if (strokes.length) sendSync(p.from); }
+      else if (amHost() && (S.phase === 'wait' || S.phase === 'over')) pubState();
+    } else if (ev === 'state') {
+      if (amDrawer() && (S.phase === 'pick' || S.phase === 'draw' || S.phase === 'result') && p.round === S.round && p.drawer === myslug()) return;
+      var newRound = p.round !== S.round || p.drawer !== S.drawer;
+      var prevPhase = S.phase, prevGot = S.got;
+      S = p; lastStateAt = t; endsAt = t + (p.left || 0) * 1000;
+      if (newRound && p.phase !== 'over') { wipe(); }
+      if (p.phase === 'result' && prevPhase !== 'result') sys('정답은 "' + p.word + '" 였어요!', 'ans');
+      if (p.phase === 'over' && prevPhase !== 'over') sys('게임 끝! 1등은 ' + winnerText() + ' 🏆', 'ans');
+      if (amDrawer() && p.phase === 'pick' && !choices) startPick();
+      render();
+    } else if (ev === 'turn') {
+      S.phase = 'pick'; S.round = p.round; S.total = p.total; S.drawer = p.drawer; S.dAt = p.dAt || 0;
+      S.scores = p.scores || {}; S.got = {}; S.word = ''; S.hint = ''; S.len = 0; S.hash = ''; S.seq = 0;
+      lastStateAt = t; endsAt = t + PICK_SEC * 1000;
+      choices = null; myWord = ''; hinted = false;
+      wipe();
+      sys(p.round + '번째 판: ' + nameOf(p.drawer) + '님이 그려요 ✏️');
+      if (amDrawer()) startPick();
+      render();
+    } else if (ev === 'seg') {
+      if (!amDrawer()) addSeg(p);
+    } else if (ev === 'clear') {
+      wipe();
+    } else if (ev === 'sync') {
+      if (p.to !== myslug()) return;
+      if (p.part === 0) { strokes = []; byId = {}; }
+      (p.st || []).forEach(function(s){ byId[s.id] = s; strokes.push(s); });
+      redraw();
+    } else if (ev === 'chat') {
+      chatLine(p.slug, p.text);
+    } else if (ev === 'correct') {
+      if (S.phase !== 'draw' || S.got[p.slug]) return;
+      if (amDrawer()) {
+        var n = Object.keys(S.got).length, pts = [5, 4, 3][n] || 2;
+        S.got[p.slug] = n + 1;
+        S.scores[p.slug] = (S.scores[p.slug] || 0) + pts;
+        S.scores[myslug()] = (S.scores[myslug()] || 0) + 2;
+        pubState();
+        var guessers = players.filter(function(x){ return x.slug !== myslug(); });
+        if (guessers.length && guessers.every(function(x){ return S.got[x.slug]; })) endRound();
+      } else S.got[p.slug] = true;
+      sys('🎉 ' + nameOf(p.slug) + '님 정답!', 'ok');
+      render();
+    }
+  }
+  function winnerText(){
+    var arr = Object.keys(S.scores).sort(function(a, b){ return S.scores[b] - S.scores[a]; });
+    return arr.length ? nameOf(arr[0]) + '님 (' + S.scores[arr[0]] + '점)' : '없어요';
+  }
+
+  // ---------- 그리는 사람 ----------
+  function startPick(){
+    var pool = WORDS.slice(), c = [];
+    while (c.length < 3) c.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    choices = c;
+    endsAt = now() + PICK_SEC * 1000;
+    pubState();
+    render();
+  }
+  async function choose(w){
+    if (!amDrawer() || S.phase !== 'pick') return;
+    myWord = w; choices = null; hinted = false;
+    S.salt = Math.random().toString(36).slice(2, 10);
+    S.hash = await sha(S.salt + norm(w));
+    S.len = chars(norm(w)).length;
+    S.hint = chars(norm(w)).map(function(){ return '○'; }).join('');
+    S.phase = 'draw'; S.got = {}; S.word = '';
+    endsAt = now() + DRAW_SEC * 1000;
+    wipe(); send('clear', {}, true);
+    pubState();
+    render();
+  }
+  function endRound(){
+    if (!amDrawer() || S.phase === 'result') return;
+    S.phase = 'result'; S.word = myWord;
+    endsAt = now() + RESULT_SEC * 1000;
+    pubState();
+    sys('정답은 "' + myWord + '" 였어요!', 'ans');
+    render();
+  }
+  function nextDrawer(){
+    if (!players.length) return null;
+    var i = -1;
+    for (var k = 0; k < players.length; k++) if (players[k].slug === S.drawer) i = k;
+    if (i >= 0) return players[(i + 1) % players.length];
+    for (var j = 0; j < players.length; j++) if (players[j].at > S.dAt) return players[j];
+    return players[0];
+  }
+  function nextTurn(){
+    if (S.round >= S.total || players.length < 2) {
+      S.phase = 'over'; endsAt = now(); pubState();
+      sys('게임 끝! 1등은 ' + winnerText() + ' 🏆', 'ans');
+      render(); return;
+    }
+    var nx = nextDrawer();
+    send('turn', { round: S.round + 1, total: S.total, drawer: nx.slug, dAt: nx.at, scores: S.scores });
+  }
+  function startGame(){
+    if (!amHost() || players.length < 2) return;
+    var total = Math.min(16, players.length * 2);
+    send('turn', { round: 1, total: total, drawer: players[0].slug, dAt: players[0].at, scores: {} });
+  }
+
+  function tick(){
+    var t = now();
+    if (amDrawer()) {
+      if (S.phase === 'pick' && t >= endsAt && choices) choose(choices[0]);
+      else if (S.phase === 'draw') {
+        if (!hinted && t >= endsAt - DRAW_SEC * 500 && S.len >= 2) {
+          hinted = true; var cs = chars(norm(myWord));
+          S.hint = cs[0] + cs.slice(1).map(function(){ return '○'; }).join('');
+          pubState(); sys('힌트: 첫 글자는 "' + cs[0] + '"', 'hint');
+        }
+        if (t >= endsAt) endRound();
+      } else if (S.phase === 'result' && t >= endsAt) { nextTurn(); }
+      if ((S.phase === 'pick' || S.phase === 'draw') && t - sentAt > 3000) pubState();
+    } else if (amHost() && (S.phase === 'pick' || S.phase === 'draw' || S.phase === 'result') && t - lastStateAt > 12000) {
+      sys(nameOf(S.drawer) + '님이 안 보여서 다음 사람으로 넘어가요.');
+      lastStateAt = t;
+      nextTurn();
+    }
+    if (pending && pending.p.length && t - flushT > 150) { flushT = t; flush(); }
+    renderTimer();
+  }
+
+  // ---------- 화면 ----------
+  function renderTimer(){
+    var tEl = $('dr-timer');
+    if (S.phase === 'draw' || S.phase === 'pick') {
+      var left = Math.max(0, Math.ceil((endsAt - now()) / 1000));
+      tEl.textContent = '⏱ ' + left + '초';
+      tEl.classList.toggle('low', S.phase === 'draw' && left <= 10);
+    } else { tEl.textContent = S.round ? S.round + ' / ' + S.total + '판' : ''; tEl.classList.remove('low'); }
+  }
+  function renderTop(){
+    var w = $('dr-word');
+    if (!myslug()) w.textContent = '로그인하면 함께할 수 있어요';
+    else if (S.phase === 'draw' && amDrawer()) w.textContent = '그릴 단어: ' + myWord;
+    else if (S.phase === 'draw') w.textContent = (S.got[myslug()] ? '정답! 다른 형님들을 기다려요 · ' : '') + S.hint + ' (' + S.len + '글자)';
+    else if (S.phase === 'pick') w.textContent = nameOf(S.drawer) + '님이 단어를 고르는 중...';
+    else if (S.phase === 'result') w.textContent = '정답: ' + S.word;
+    else if (S.phase === 'over') w.textContent = '게임 끝! 🏆 ' + winnerText();
+    else w.textContent = '형님들을 기다리는 중';
+  }
+  function renderPlayers(){
+    var ol = $('dr-players'); ol.textContent = '';
+    var arr = players.slice().sort(function(a, b){ return (S.scores[b.slug] || 0) - (S.scores[a.slug] || 0) || a.at - b.at; });
+    if (!arr.length) { ol.appendChild(el('li', 'dr-none', joined ? '아직 아무도 없어요' : '연결 중...')); return; }
+    arr.forEach(function(p){
+      var li = el('li', p.slug === myslug() ? 'me' : null);
+      var tag = (S.drawer === p.slug && (S.phase === 'pick' || S.phase === 'draw' || S.phase === 'result')) ? '✏️ ' : (S.got[p.slug] ? '✅ ' : '');
+      li.appendChild(el('span', 'nm', tag + nameOf(p.slug) + (p.slug === host() ? ' 👑' : '')));
+      li.appendChild(el('b', null, (S.scores[p.slug] || 0) + '점'));
+      ol.appendChild(li);
+    });
+  }
+  function renderOver(){
+    over.textContent = '';
+    var show = true, box = el('div', 'dr-over-box');
+    if (!myslug()) {
+      box.appendChild(el('b', null, '🎨 그림 맞히기'));
+      box.appendChild(el('p', null, me ? '내 방을 고른 형님만 함께할 수 있어요.' : '로그인한 형님끼리 함께해요.'));
+      if (!me) { var lb = el('button', 'primary', '로그인하기'); lb.type = 'button'; lb.addEventListener('click', function(){ if (window.__SV14_OPEN_AUTH) window.__SV14_OPEN_AUTH(); }); box.appendChild(lb); }
+    } else if (!joined) {
+      box.appendChild(el('p', null, '그림판에 연결하는 중...'));
+    } else if (S.phase === 'wait' || S.phase === 'over') {
+      if (S.phase === 'over') {
+        box.appendChild(el('b', null, '🏆 게임 끝!'));
+        var ol = el('ol', 'dr-final');
+        Object.keys(S.scores).sort(function(a, b){ return S.scores[b] - S.scores[a]; }).slice(0, 5).forEach(function(sl){ ol.appendChild(el('li', null, nameOf(sl) + ' · ' + S.scores[sl] + '점')); });
+        box.appendChild(ol);
+      } else box.appendChild(el('b', null, '🎨 그림 맞히기'));
+      box.appendChild(el('p', null, '지금 ' + players.length + '명 들어와 있어요.'));
+      if (players.length < 2) box.appendChild(el('p', 'dr-dim', '2명부터 할 수 있어요. 단톡방에 형님들을 불러 보세요!'));
+      else if (amHost()) { var sb2 = el('button', 'primary', S.phase === 'over' ? '한 판 더!' : '게임 시작'); sb2.type = 'button'; sb2.addEventListener('click', startGame); box.appendChild(sb2); }
+      else box.appendChild(el('p', 'dr-dim', '👑 ' + nameOf(host()) + '님이 시작하면 바로 해요.'));
+    } else if (S.phase === 'pick') {
+      if (amDrawer() && choices) {
+        box.appendChild(el('b', null, '그릴 단어를 골라 주세요!'));
+        var row = el('div', 'dr-choices');
+        choices.forEach(function(w){ var b = el('button', null, w); b.type = 'button'; b.addEventListener('click', function(){ choose(w); }); row.appendChild(b); });
+        box.appendChild(row);
+        box.appendChild(el('p', 'dr-dim', '안 고르면 첫 번째 단어로 정해져요.'));
+      } else box.appendChild(el('p', null, '✏️ ' + nameOf(S.drawer) + '님이 그릴 단어를 고르고 있어요...'));
+    } else if (S.phase === 'result') {
+      box.appendChild(el('b', null, '정답은 "' + S.word + '"'));
+      var who = Object.keys(S.got).filter(function(k){ return S.got[k]; });
+      box.appendChild(el('p', null, who.length ? '맞힌 형님: ' + who.map(nameOf).join(', ') : '아무도 못 맞혔어요 😢'));
+    } else show = false;
+    over.hidden = !show;
+    if (show) over.appendChild(box);
+  }
+  function renderInput(){
+    var dis = !myslug() || !joined, ph = '정답이나 하고 싶은 말을 써 주세요';
+    if (S.phase === 'draw' && amDrawer()) { dis = true; ph = '그리는 동안에는 채팅을 쉴게요'; }
+    else if (S.phase === 'draw' && S.got[myslug()]) { dis = true; ph = '정답! 이번 판이 끝날 때까지 기다려요'; }
+    input.disabled = dis; input.placeholder = ph;
+    $('dr-send').disabled = dis;
+  }
+  function render(){ renderTop(); renderTimer(); renderPlayers(); renderOver(); renderTools(); renderInput(); }
+
+  $('dr-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var text = input.value.trim().slice(0, 40);
+    if (!text || input.disabled) return;
+    input.value = '';
+    if (S.phase === 'draw' && !amDrawer() && S.hash && S.len) {
+      var cs = chars(norm(text)), hit = false;
+      for (var i = 0; i + S.len <= cs.length && !hit; i++) {
+        if ((await sha(S.salt + cs.slice(i, i + S.len).join(''))) === S.hash) hit = true;
+      }
+      if (hit) { sys('🎯 정답이에요! ("' + cs.join('') + '")', 'ok'); send('correct', { slug: myslug() }); return; }
+    }
+    send('chat', { slug: myslug(), text: text });
+  });
+
+  function onPresence(){
+    var st = ch.presenceState(), list = [];
+    Object.keys(st).forEach(function(k){
+      var metas = st[k] || [], at = Infinity;
+      metas.forEach(function(m){ if (m && m.at < at) at = m.at; });
+      if (at < Infinity) list.push({ slug: k, at: at });
+    });
+    list.sort(function(a, b){ return a.at - b.at || (a.slug < b.slug ? -1 : 1); });
+    var before = players.map(function(p){ return p.slug; });
+    players = list;
+    list.forEach(function(p){ if (before.length && before.indexOf(p.slug) < 0) sys('👋 ' + nameOf(p.slug) + '님이 들어왔어요.'); });
+    before.forEach(function(s){ if (!list.some(function(p){ return p.slug === s; })) sys(nameOf(s) + '님이 나갔어요.'); });
+    if (players.length < 2 && (S.phase === 'pick' || S.phase === 'draw') && amDrawer()) { endRound(); }
+    render();
+  }
+  var waitT = 0, waitN = 0;
+  function enter(){
+    me = window.__SV14_ME || null;
+    if (!me && !waitT) {
+      waitN = 0;
+      waitT = setInterval(function(){
+        waitN++;
+        if (view.hidden || window.__SV14_ME || waitN > 30) { clearInterval(waitT); waitT = 0; if (!view.hidden && window.__SV14_ME) enter(); }
+      }, 500);
+    }
+    if (!logEl.children.length) sys('한 형님이 그리면 나머지 형님들이 채팅으로 맞혀요. 먼저 맞힐수록 점수가 커요!');
+    if (!timerI) timerI = setInterval(tick, 200);
+    if (ch || !window.__SV14_SB || !myslug()) { render(); return; }
+    ch = window.__SV14_SB.channel('sv14-draw', { config: { broadcast: { self: false }, presence: { key: myslug() } } });
+    ch.on('presence', { event: 'sync' }, onPresence);
+    ['state', 'turn', 'seg', 'clear', 'chat', 'correct', 'hello', 'sync'].forEach(function(ev){
+      ch.on('broadcast', { event: ev }, function(m){ handle(ev, (m && m.payload) || {}); });
+    });
+    ch.subscribe(function(status){
+      if (status === 'SUBSCRIBED') {
+        joined = true;
+        ch.track({ slug: myslug(), at: now() });
+        send('hello', { from: myslug() }, true);
+        render();
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') { joined = false; sys('연결이 끊겼어요. 새로 고쳐 주세요.'); render(); }
+    });
+    render();
+  }
+  function leave(){
+    if (ch) { try { window.__SV14_SB.removeChannel(ch); } catch (e) {} }
+    ch = null; joined = false; players = []; S = blank(); choices = null; myWord = '';
+    if (timerI) { clearInterval(timerI); timerI = 0; }
+    wipe(); logEl.textContent = '';
+  }
+  clearCanvas();
+  window.__SV14_DRAW = { enter: enter, leave: leave, active: function(){ return !!ch; } };
 })();
 </script>
 </div>
@@ -2883,6 +3400,8 @@ window.__SV14_BOOT = function(){
   // ===== 미니게임: 홈에는 목록(#games), 게임마다 따로 들어가는 페이지(#game-<id>) =====
   var gameView = document.getElementById('view-game');
   var gjView = document.getElementById('view-gj');
+  var drawView = document.getElementById('view-draw');
+  function leaveDraw(){ drawView.hidden = true; if (window.__SV14_DRAW) window.__SV14_DRAW.leave(); }
   var GAMES = (function(){
     var gc = document.getElementById('game-canvas');
     var gx = gc.getContext('2d');
@@ -4268,6 +4787,15 @@ window.__SV14_BOOT = function(){
         a.appendChild(el('span', 'gt-go', '하러 가기 →'));
         box.appendChild(a);
       });
+      var da = el('a', 'game-tile'); da.href = '#draw';
+      da.appendChild(el('span', 'gt-icon', '🎨'));
+      var db = el('span', 'gt-body');
+      db.appendChild(el('b', null, '그림 맞히기'));
+      db.appendChild(el('span', 'gt-desc', '한 형님이 그리면 나머지가 채팅으로 맞혀요. 접속한 형님들끼리 실시간으로 함께하는 게임이에요.'));
+      db.appendChild(el('span', 'gt-top', '👥 2명부터 · 여럿이 할수록 재밌어요'));
+      da.appendChild(db);
+      da.appendChild(el('span', 'gt-go', '하러 가기 →'));
+      box.appendChild(da);
       var sb = window.__SV14_SB;
       if (!sb) return;
       petG.hubInfo(document.getElementById('gt-top-pet'));
@@ -4284,6 +4812,7 @@ window.__SV14_BOOT = function(){
     }
     var sw = document.getElementById('game-switch');
     LIST.forEach(function(g){ var a = el('a', null, g.icon + ' ' + g.title); a.href = '#game-' + g.id; a.setAttribute('data-game', g.id); sw.appendChild(a); });
+    (function(){ var a = el('a', null, '🎨 그림 맞히기'); a.href = '#draw'; sw.appendChild(a); })();
     function open(id){
       var g = BY[id];
       if (!g) return;
@@ -4889,6 +5418,7 @@ window.__SV14_BOOT = function(){
     homeView.hidden = true;
     gameView.hidden = true;
     gjView.hidden = true;
+    leaveDraw();
     roomView.hidden = false;
     document.getElementById('room-owner').textContent = m.name;
     document.getElementById('p-name').textContent = m.name;
@@ -4921,6 +5451,7 @@ window.__SV14_BOOT = function(){
     homeView.hidden = true;
     roomView.hidden = true;
     gjView.hidden = true;
+    leaveDraw();
     gameView.hidden = false;
     GAMES.open(id);
     window.scrollTo(0, 0);
@@ -4929,6 +5460,7 @@ window.__SV14_BOOT = function(){
     roomView.hidden = true;
     gameView.hidden = true;
     gjView.hidden = true;
+    leaveDraw();
     homeView.hidden = false;
     GAMES.hub();
     if (hash) {
@@ -4941,13 +5473,24 @@ window.__SV14_BOOT = function(){
     homeView.hidden = true;
     roomView.hidden = true;
     gameView.hidden = true;
+    leaveDraw();
     gjView.hidden = false;
     window.scrollTo(0, 0);
     if (window.__SV14_GJ) window.__SV14_GJ.show();
   }
+  function showDraw(){
+    homeView.hidden = true;
+    roomView.hidden = true;
+    gameView.hidden = true;
+    gjView.hidden = true;
+    drawView.hidden = false;
+    window.scrollTo(0, 0);
+    if (window.__SV14_DRAW) window.__SV14_DRAW.enter();
+  }
   function route(){
     var h = location.hash.replace(/^#/, '');
     if (h === 'gj') { showGJ(); return; }
+    if (h === 'draw') { showDraw(); return; }
     var m = h.match(/^room-([a-z0-9-]+)$/), gm = h.match(/^game-([a-z]+)$/);
     if (gm && GAMES.has(gm[1])) showGame(gm[1]);
     else if (m && BY_SLUG[m[1]]) showRoom(BY_SLUG[m[1]]);
