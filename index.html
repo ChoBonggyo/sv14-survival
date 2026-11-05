@@ -384,6 +384,29 @@ textarea{font:.85rem/1.55 var(--mono);resize:vertical}
 .pet-ui[hidden],.pet-ui [hidden]{display:none}
 .pet-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
 .pet-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.pet-plaza{min-height:46px;padding:0 16px;border-radius:14px;border:2px dashed #8fd3c1;background:linear-gradient(135deg,#fffbe6,#e9f8f2);color:#2b3a2f;font:inherit;font-weight:700;cursor:pointer;text-align:left}
+.pet-plaza span{font-weight:500;font-size:.85rem;color:var(--muted);margin-left:6px}
+.pet-visit{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pet-visit button{min-height:44px;padding:0 16px;border-radius:12px;font:inherit;font-weight:700;cursor:pointer}
+.pet-visit #pet-goto{border:1px solid var(--line);background:var(--surface);color:inherit}
+.pet-visit span{font-size:.88rem;color:var(--muted)}
+.pet-visits{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--hp-bg)}
+.pet-visits ol{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:3px;font-size:.88rem}
+.pet-visits .pv-empty{color:var(--muted)}
+.room-pets .rp-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.rp-msg{grid-column:1/-1}
+.rp-card{display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--hp-line);border-radius:12px;background:#fff}
+.rp-icon{flex:0 0 auto;width:54px;text-align:center;line-height:1}
+.rp-icon.s0{font-size:26px}.rp-icon.s1{font-size:30px}.rp-icon.s2{font-size:38px}.rp-icon.s3{font-size:46px}
+.rp-body{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:.88rem}
+.rp-body b{font-size:1rem}
+.rp-h{color:#c2457a;font-weight:700}
+.rp-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
+.rp-btns button{min-height:36px;padding:0 12px;border-radius:10px;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer}
+.rp-go{font-weight:700;font-size:.88rem;color:#2f8a72;text-decoration:none}
+.rp-empty{margin:0;color:var(--muted);font-size:.9rem}
+.rp-msg{margin:0;font-size:.85rem;color:var(--accent)}
+.rp-msg:empty{display:none}
 .pet-tab{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font:inherit;font-weight:700;color:inherit;cursor:pointer}
 .pet-tab.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .pet-tab.add{border-style:dashed}
@@ -1263,6 +1286,10 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
             </div>
             <div class="room-title" id="room-title">—</div>
           </div>
+          <div class="room-pets" id="sec-pets">
+            <h3>다마고치</h3>
+            <div class="rp-list" id="rp-list"></div>
+          </div>
           <div class="guestbook" id="sec-guestbook">
             <h3>방명록</h3>
             <ol class="gb-list" id="gb-list"></ol>
@@ -1281,6 +1308,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
         </div>
         <nav class="side-tabs" aria-label="미니홈피 메뉴">
           <button type="button" data-go="sec-miniroom">미니룸</button>
+          <button type="button" data-go="sec-pets">다마고치</button>
           <button type="button" data-go="sec-guestbook">방명록</button>
           <button type="button" data-go="sec-gift">밤 선물</button>
           <button type="button" data-go="cz-profile">프로필</button>
@@ -2107,6 +2135,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
           <div class="game-overlay" id="g-overlay"><p id="g-msg"></p><button type="button" class="primary" id="g-start">시작하기</button></div>
         </div>
         <div class="pet-ui" id="pet-ui" hidden>
+          <button type="button" class="pet-plaza" id="pet-plaza">🏝️ 다마고치 광장 가기 <span>형님들 아이들이 모두 모여 있어요</span></button>
           <div class="pet-tabs" id="pet-tabs" role="group" aria-label="내 다마고치 고르기" hidden></div>
           <div class="pet-head"><b id="pet-name">다마고치 키우기</b><span id="pet-stage"></span></div>
           <div class="pet-bars" id="pet-bars">
@@ -2120,7 +2149,13 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
             <button type="button" data-act="play">⚽ 놀아 주기</button>
             <button type="button" data-act="wash">🛁 씻기기</button>
           </div>
+          <div class="pet-visit" id="pet-visit" hidden>
+            <button type="button" class="primary" id="pet-heart">💗 하트 주기</button>
+            <button type="button" id="pet-goto" hidden>🏡 정원 놀러 가기</button>
+            <span id="pet-hearts-n"></span>
+          </div>
           <button type="button" id="pet-back" hidden>← 내 정원으로 돌아가기</button>
+          <div class="pet-visits" id="pet-visits" hidden><b>💌 놀러 와서 하트 준 형님들</b><ol id="pet-visits-list"></ol></div>
           <div class="pet-shop" id="pet-shop" hidden>
             <div class="ps-head"><b>🌰 밤 상점</b><span>내 밤 <b id="ps-nuts">—</b>개 · 미니홈피에서 출석하면 매일 2개</span></div>
             <div class="ps-items" id="ps-items"></div>
@@ -3799,6 +3834,23 @@ window.__SV14_BOOT = function(){
       var acts = {};
       var placing = null, selected = -1, saveTimer = 0, uiT = 0;
       var W = null, worldFail = false;
+      var HEARTS = {}, HEART_EXP = 3, plazaBusy = false;
+      var PLAZA = [{ id: 'pond', x: 0, z: -9, r: 0 }, { id: 'mountain', x: -10, z: -10, r: 0 }, { id: 'house', x: 11, z: -11, r: -0.6 },
+        { id: 'tree', x: -13, z: 2, r: 0 }, { id: 'pine', x: 13, z: -2, r: 0 }, { id: 'tree', x: 9, z: 10, r: 0 }, { id: 'pine', x: -9, z: 11, r: 0 },
+        { id: 'flower', x: -3, z: 13, r: 0 }, { id: 'flower', x: 4, z: 13, r: 0 }, { id: 'bench', x: 4, z: -14, r: 0.2 }, { id: 'mushroom', x: -14, z: -3, r: 0 }, { id: 'rock', x: 14, z: 5, r: 0 }];
+      function kstDay(){ return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10); }
+      function allHearts(){ return Object.keys(HEARTS).map(function(k){ return HEARTS[k]; }); }
+      function heartsOf(id){ return allHearts().filter(function(h){ return h.pet_id === id; }); }
+      function gaveToday(id){ var t = kstDay(); return !!(me && me.slug) && heartsOf(id).some(function(h){ return h.giver === me.slug && h.d === t; }); }
+      async function loadHearts(ids){
+        var sb = window.__SV14_SB;
+        if (!sb || !ids.length) return;
+        var r = await sb.from('pet_hearts').select('id,pet_id,giver,d').in('pet_id', ids).order('id', { ascending: false }).limit(600);
+        if (r.error) return;
+        ids.forEach(function(i){ delete HEARTS['local-' + i]; });
+        r.data.forEach(function(h){ HEARTS[h.id] = h; });
+        renderUi();
+      }
       function $(id){ return document.getElementById(id); }
       var kindSel = $('pet-new-kind');
       PET_KINDS.forEach(function(k){ var o = document.createElement('option'); o.value = k.id; o.textContent = k.label; kindSel.appendChild(o); });
@@ -3840,7 +3892,8 @@ window.__SV14_BOOT = function(){
         if (!W) return '3D 정원을 불러오는 중...';
         if (placing) return '놓을 곳을 누르세요. 화면을 끌면 시점이 돌아가요.';
         if (!pp) return mineOk ? (loaded ? '아래에서 알을 받아 키워 보세요!' : '') : '로그인하고 내 방을 고르면 나만의 다마고치를 키울 수 있어요.';
-        if (view) return nameOfMember(view.slug) + '네 정원을 구경 중이에요.';
+        if (view && view.plaza) return '🏝️ 다마고치 광장이에요! 아이를 누르면 누구네 아이인지 보이고 하트를 줄 수 있어요.';
+        if (view) return nameOfMember(view.slug) + '네 정원에 놀러 왔어요. 하트를 주면 그 아이가 쑥 자라요!';
         if (sc && sc.pets.length > 1) return '다마고치를 누르면 그 아이를 돌볼 수 있어요.';
         return '';
       }
@@ -3862,7 +3915,7 @@ window.__SV14_BOOT = function(){
             box.appendChild(add);
           }
         }
-        box.hidden = box.childNodes.length < 2;
+        box.hidden = box.childNodes.length < 2 || !!(view && view.plaza);
       }
       function renderUi(){
         var pp = shown(), mineOk = !!(me && me.slug);
@@ -3871,7 +3924,10 @@ window.__SV14_BOOT = function(){
         $('pet-adopt').hidden = !showAdopt;
         $('pet-adopt-title').textContent = my.pets.length ? '새 알을 하나 더 받아 가세요! (' + my.pets.length + '/' + MAX_PETS + ')' : '알을 하나 받아 가세요!';
         $('pet-actions').hidden = !(isMine() && pp && !adopting);
-        $('pet-back').hidden = !(view && mineOk);
+        $('pet-back').hidden = !view;
+        $('pet-back').textContent = mineOk ? '← 내 정원으로 돌아가기' : '← 나가기';
+        $('pet-plaza').hidden = !!(view && view.plaza);
+        renderVisit(pp, mineOk);
         $('pet-bars').hidden = !pp || adopting;
         $('pet-shop').hidden = !(isMine() && my.pets.length);
         $('pet-deco').hidden = !(isMine() && my.pets.length);
@@ -3932,6 +3988,33 @@ window.__SV14_BOOT = function(){
         $('pd-state').textContent = placing ? '정원 바닥을 눌러 놓으세요' : selected >= 0 ? '돌리거나 옮기거나 보관함에 넣을 수 있어요' : '정원에 놓인 물건은 끌어서 옮기거나, 눌러서 돌리거나 보관할 수 있어요';
         $('pw-hint').textContent = hint();
       }
+      function renderVisit(pp, mineOk){
+        var box = $('pet-visit'), other = !!(view && pp && !(me && pp.slug === me.slug));
+        box.hidden = !(view && pp);
+        if (!box.hidden) {
+          var hb = $('pet-heart'), done = gaveToday(pp.id);
+          hb.hidden = !other;
+          hb.disabled = busy || done || !mineOk;
+          hb.textContent = !mineOk ? '💗 로그인하고 내 방을 고르면 하트를 줄 수 있어요' : done ? '💗 오늘 하트 줬어요 (내일 또 와요!)' : '💗 하트 주기 (경험치 +' + HEART_EXP + ')';
+          $('pet-goto').hidden = !view.plaza;
+          $('pet-goto').textContent = me && pp.slug === me.slug ? '🏡 내 정원으로 가기' : '🏡 ' + nameOfMember(pp.slug) + '네 정원 놀러 가기';
+          $('pet-hearts-n').textContent = '받은 하트 ' + heartsOf(pp.id).length + '개';
+        }
+        var vb = $('pet-visits'), show = isMine() && my.pets.length > 0;
+        vb.hidden = !show;
+        if (!show) return;
+        var ids = my.pets.map(function(p){ return p.id; });
+        var list = allHearts().filter(function(h){ return ids.indexOf(h.pet_id) >= 0; }).sort(function(a, b){ return b.id - a.id; }).slice(0, 8);
+        var sig = list.map(function(h){ return h.id + h.giver; }).join(',') + '|' + my.pets.length;
+        if (vb.getAttribute('data-sig') === sig) return;
+        vb.setAttribute('data-sig', sig);
+        var ol = $('pet-visits-list'); ol.textContent = '';
+        if (!list.length) ol.appendChild(el('li', 'pv-empty', '아직 놀러 온 형님이 없어요. 광장에서 다른 형님 아이에게 먼저 하트를 줘 보세요!'));
+        list.forEach(function(h){
+          var pp2 = my.pets.filter(function(p){ return p.id === h.pet_id; })[0];
+          ol.appendChild(el('li', null, String(h.d).slice(5).replace('-', '.') + ' · ' + nameOfMember(h.giver) + '님이 ' + (pp2 ? pp2.name : '') + '에게 💗'));
+        });
+      }
       function renderPanels(){ renderTabs(); renderUi(); if (isMine() && my.pets.length) { renderShop(); renderInv(); } }
 
       // ---------- 서버 ----------
@@ -3950,8 +4033,46 @@ window.__SV14_BOOT = function(){
         if (!my.pets.some(function(p2){ return p2.id === selId; })) selId = my.pets.length ? my.pets[0].id : null;
         renderPanels();
         if (W) W.rebuild();
+        loadHearts(my.pets.map(function(p){ return p.id; })).catch(function(){});
+      }
+      function goHome(id){
+        view = null; if (id != null) selId = id; adopting = false; acts = {}; placing = null; selected = -1;
+        $('pet-msg').textContent = '';
+        if (W) { W.clearGhost(); W.rebuild(); }
+        renderPanels();
+      }
+      async function openPlaza(){
+        var sb = window.__SV14_SB;
+        if (!sb || plazaBusy) return;
+        plazaBusy = true;
+        var r = await sb.from('pets').select('*').order('id', { ascending: true }).limit(66);
+        plazaBusy = false;
+        if (r.error) { $('pet-msg').textContent = '광장을 열지 못했어요: ' + r.error.message; return; }
+        var first = r.data.filter(function(p){ return !(me && p.slug === me.slug); })[0] || r.data[0];
+        view = { slug: null, plaza: true, pets: r.data, owned: {}, garden: PLAZA, sel: first ? first.id : null };
+        acts = {}; placing = null; selected = -1; adopting = false;
+        $('pet-msg').textContent = r.data.length ? '형님들 다마고치 ' + r.data.length + '마리가 광장에 모였어요!' : '';
+        if (W) { W.clearGhost(); W.rebuild(); }
+        renderPanels();
+        loadHearts(r.data.map(function(p){ return p.id; })).catch(function(){});
+      }
+      async function giveHeart(pp){
+        if (busy || !window.__SV14_SB) return;
+        busy = true; renderUi();
+        var r = await window.__SV14_SB.rpc('pet_heart', { p_id: pp.id });
+        busy = false;
+        if (r.error) { $('pet-msg').textContent = r.error.message; renderUi(); return; }
+        var before = stageOf(pp);
+        pp.exp = typeof r.data === 'number' ? r.data : pp.exp + HEART_EXP;
+        HEARTS['local-' + pp.id] = { id: 1e15, pet_id: pp.id, giver: me.slug, d: kstDay() };
+        $('pet-msg').textContent = '💗 ' + pp.name + '에게 하트를 줬어요! 경험치 +' + HEART_EXP + (stageOf(pp) > before ? ' · 🎉 ' + STAGES[stageOf(pp)][1] + '(으)로 자랐어요!' : '');
+        if (W) W.burst('heart', pp.id);
+        acts[pp.id] = { k: 'pet', t: 1.2 };
+        renderPanels();
+        loadHearts([pp.id]).catch(function(){});
       }
       async function openView(slug, focusId, rows){
+        if (!rows) { var rr = await window.__SV14_SB.from('pets').select('*').eq('slug', slug); rows = rr.data || []; }
         view = { slug: slug, pets: rows.filter(function(x){ return x.slug === slug; }).sort(function(a2, b2){ return a2.id - b2.id; }), owned: {}, garden: [], sel: focusId };
         acts = {}; placing = null; selected = -1; adopting = false;
         $('pet-msg').textContent = '';
@@ -3959,6 +4080,7 @@ window.__SV14_BOOT = function(){
         renderPanels();
         var g = await window.__SV14_SB.from('gardens').select('garden').eq('slug', slug).maybeSingle();
         if (view && view.slug === slug && g.data && Array.isArray(g.data.garden)) { view.garden = g.data.garden; if (W) W.rebuild(); }
+        if (view && view.slug === slug) loadHearts(view.pets.map(function(p){ return p.id; })).catch(function(){});
       }
       async function loadList(){
         var sb = window.__SV14_SB;
@@ -3968,7 +4090,7 @@ window.__SV14_BOOT = function(){
         rankEl.textContent = '';
         if (r.error) { rankNote.textContent = '다마고치 준비 중이에요.'; return; }
         if (!r.data.length) { rankNote.textContent = '아직 키우는 형님이 없어요. 첫 알을 받아 보세요!'; return; }
-        rankNote.textContent = '이름을 누르면 그 형님 정원을 구경해요.';
+        rankNote.textContent = '이름을 누르면 그 형님 정원에 놀러 가요. 하트도 줄 수 있어요!';
         r.data.forEach(function(row, i){
           var li = el('li', me && row.slug === me.slug ? 'me' : null);
           var bt = el('button', 'pet-pick'); bt.type = 'button';
@@ -3978,12 +4100,8 @@ window.__SV14_BOOT = function(){
           bt.appendChild(nm);
           bt.appendChild(el('b', null, STAGES[stageOf(row)][1] + ' ' + mood(now3(row))[0]));
           bt.addEventListener('click', function(){
-            if (me && row.slug === me.slug) {
-              view = null; selId = row.id; adopting = false; acts = {}; placing = null; selected = -1;
-              $('pet-msg').textContent = '';
-              if (W) { W.clearGhost(); W.rebuild(); }
-              renderPanels();
-            } else openView(row.slug, row.id, r.data).catch(function(){});
+            if (me && row.slug === me.slug) goHome(row.id);
+            else openView(row.slug, row.id, r.data).catch(function(){});
           });
           li.appendChild(bt);
           rankEl.appendChild(li);
@@ -4050,6 +4168,9 @@ window.__SV14_BOOT = function(){
       window.addEventListener('keydown', function(e){ if (e.key === 'Escape' && placing && cur === petG && !gameView.hidden) cancelPlace(); });
       var btns0 = $('pet-actions').querySelectorAll('button');
       for (var bi = 0; bi < btns0.length; bi++) btns0[bi].addEventListener('click', function(){ doAct(this.getAttribute('data-act')); });
+      $('pet-heart').addEventListener('click', function(){ var pp = shown(); if (pp) giveHeart(pp); });
+      $('pet-goto').addEventListener('click', function(){ var pp = shown(); if (!pp) return; if (me && pp.slug === me.slug) goHome(pp.id); else openView(pp.slug, pp.id).catch(function(){}); });
+      $('pet-plaza').addEventListener('click', function(){ openPlaza().catch(function(){}); });
       $('pet-back').addEventListener('click', function(){ view = null; acts = {}; $('pet-msg').textContent = ''; if (W) W.rebuild(); renderPanels(); });
       $('pet-adopt').addEventListener('submit', async function(ev){
         ev.preventDefault();
@@ -4385,6 +4506,21 @@ window.__SV14_BOOT = function(){
         var rigs = {};
         var marker = new T.Mesh(new T.ConeGeometry(0.32, 0.55, 14), mat('#ffd34d'));
         marker.rotation.x = Math.PI; marker.visible = false; scene.add(marker);
+        function makeLabel(txt){
+          var c = document.createElement('canvas'), x = c.getContext('2d'), f = 'bold 40px "Noto Sans KR","Malgun Gothic",sans-serif';
+          x.font = f;
+          var w = Math.ceil(x.measureText(txt).width) + 44;
+          c.width = w; c.height = 72;
+          x.font = f;
+          x.fillStyle = 'rgba(255,255,255,0.92)';
+          x.beginPath(); x.moveTo(36, 4); x.arcTo(w - 4, 4, w - 4, 68, 32); x.arcTo(w - 4, 68, 4, 68, 32); x.arcTo(4, 68, 4, 4, 32); x.arcTo(4, 4, w - 4, 4, 32); x.fill();
+          x.fillStyle = '#2c3620'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(txt, w / 2, 38);
+          var tex = new T.CanvasTexture(c);
+          var sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+          sp.scale.set(1.15 * w / 72, 1.15, 1);
+          sp.renderOrder = 5;
+          return sp;
+        }
         function syncPets(){
           var sc = scope(), list = sc && sc.pets.length ? sc.pets : [null], seen = {};
           list.forEach(function(pp, i){
@@ -4392,16 +4528,20 @@ window.__SV14_BOOT = function(){
             seen[id] = true;
             var e = rigs[id];
             if (!e || e.key !== key) {
-              if (e) scene.remove(e.rig.root);
+              if (e) { scene.remove(e.rig.root); if (e.label) scene.remove(e.label); }
               var rg = buildPet(pp && PET_COL[pp.kind] ? pp.kind : 'cat', pp ? stageOf(pp) : 0);
               scene.add(rg.root);
-              var s0 = e ? e.s : { x: (i - (list.length - 1) / 2) * 3.4, z: 2, heading: 0, tx: 0, tz: 2, state: 'idle', t: 1 + i, ph: i * 1.7, blink: 2 + i };
+              var many = list.length > 4, ang = i * 2.39996, rad = 2.5 + Math.sqrt((i + 0.5) / list.length) * 11;
+              var s0 = e ? e.s : { x: many ? Math.cos(ang) * rad : (i - (list.length - 1) / 2) * 3.4, z: many ? Math.sin(ang) * rad : 2, heading: 0, tx: 0, tz: 2, state: 'idle', t: 1 + i, ph: i * 1.7, blink: 2 + i };
               rigs[id] = e = { rig: rg, key: key, s: s0 };
               if (blocked(s0.x, s0.z, 0.8)) { s0.x = (i - 1) * 2; s0.z = 0; }
             }
             e.pp = pp;
+            var wantLabel = !!(pp && view && view.plaza);
+            if (wantLabel && !e.label) { e.label = makeLabel(pp.name + ' · ' + nameOfMember(pp.slug)); scene.add(e.label); }
+            if (!wantLabel && e.label) { scene.remove(e.label); e.label = null; }
           });
-          Object.keys(rigs).forEach(function(id){ if (!seen[id]) { scene.remove(rigs[id].rig.root); delete rigs[id]; } });
+          Object.keys(rigs).forEach(function(id){ if (!seen[id]) { scene.remove(rigs[id].rig.root); if (rigs[id].label) scene.remove(rigs[id].label); delete rigs[id]; } });
         }
         function blocked(x, z, rad){
           if (Math.sqrt(x * x + z * z) > ROAM) return true;
@@ -4452,7 +4592,7 @@ window.__SV14_BOOT = function(){
           var e = rigs[String(id)];
           if (!e) return;
           var s = e.s, h = 3.2 * scaleOf(e.pp) + heightAt(s.x, s.z);
-          var set = { feed: ['🍙', '😋', '✨'], play: ['💕', '⚽', '🎵'], wash: ['💦', '💧', '✨'], pet: ['💗'] }[kind] || ['💗'];
+          var set = { feed: ['🍙', '😋', '✨'], play: ['💕', '⚽', '🎵'], wash: ['💦', '💧', '✨'], pet: ['💗'], heart: ['💗', '💖', '💕'] }[kind] || ['💗'];
           for (var i = 0; i < (kind === 'pet' ? 2 : 7); i++) {
             emit(set[i % set.length], s.x + (Math.random() - 0.5) * 1.6, h + Math.random() * 0.8, s.z + (Math.random() - 0.5) * 1.6, 1.2 + Math.random(), 1.6 + Math.random() * 0.6, 0.8 + Math.random() * 0.4);
           }
@@ -4636,7 +4776,8 @@ window.__SV14_BOOT = function(){
           ids.forEach(function(id){ stepPet(rigs[id], dt); });
           var me2 = sp ? rigs[String(sp.id)] : null;
           marker.visible = !!(me2 && sc && sc.pets.length > 1);
-          if (marker.visible) marker.position.set(me2.s.x, (me2.pp && me2.pp.kind === 'turtle' ? 2.2 : 3.4) * scaleOf(me2.pp) + 0.9 + Math.sin(me2.s.ph * 4) * 0.15 + me2.rig.root.position.y, me2.s.z);
+          if (marker.visible) marker.position.set(me2.s.x, (me2.pp && me2.pp.kind === 'turtle' ? 2.2 : 3.4) * scaleOf(me2.pp) + (me2.label ? 2.6 : 0.9) + Math.sin(me2.s.ph * 4) * 0.15 + me2.rig.root.position.y, me2.s.z);
+          ids.forEach(function(id){ var e3 = rigs[id]; if (e3.label) e3.label.position.set(e3.s.x, (e3.pp && e3.pp.kind === 'turtle' ? 2.2 : 3.4) * scaleOf(e3.pp) + 1.3 + e3.rig.root.position.y, e3.s.z); });
           clouds.rotation.y += dt * 0.01;
           for (var i = fx.length - 1; i >= 0; i--) {
             var f = fx[i];
@@ -4655,13 +4796,64 @@ window.__SV14_BOOT = function(){
         loadThree().then(function(){ if (!W && !worldFail) { W = makeWorld(); renderPanels(); } }, function(){ worldFail = true; renderUi(); });
       }
 
+      window.__SV14_ROOMPETS = async function(slug){
+        var box = document.getElementById('rp-list'), sb = window.__SV14_SB;
+        if (!box) return;
+        box.dataset.slug = slug;
+        box.textContent = '';
+        if (!sb) return;
+        var r = await sb.from('pets').select('*').eq('slug', slug).order('id', { ascending: true });
+        if (box.dataset.slug !== slug) return;
+        if (r.error) { box.appendChild(el('p', 'rp-empty', '다마고치 준비 중이에요.')); return; }
+        var mineRoom = !!(me && me.slug === slug);
+        if (!r.data.length) {
+          box.appendChild(el('p', 'rp-empty', mineRoom ? '아직 다마고치가 없어요. 알을 받아 키워 보세요!' : '아직 키우는 다마고치가 없어요.'));
+          if (mineRoom) { var a0 = el('a', 'rp-go', '🥚 알 받으러 가기 →'); a0.href = '#game-pet'; box.appendChild(a0); }
+          return;
+        }
+        await loadHearts(r.data.map(function(p){ return p.id; }));
+        if (box.dataset.slug !== slug) return;
+        box.textContent = '';
+        var msg = el('p', 'rp-msg'); msg.setAttribute('role', 'status');
+        r.data.forEach(function(pp){
+          var sg = stageOf(pp), md = mood(now3(pp)), c = el('div', 'rp-card');
+          c.appendChild(el('span', 'rp-icon s' + sg, sg === 0 ? '🥚' : (KIND_ICON[pp.kind] || '🐣')));
+          var bd = el('div', 'rp-body');
+          bd.appendChild(el('b', null, pp.name));
+          bd.appendChild(el('span', null, STAGES[sg][1] + ' · Lv.' + (Math.floor(pp.exp / 10) + 1) + ' · ' + md[0] + ' ' + md[1]));
+          bd.appendChild(el('span', 'rp-h', '💗 받은 하트 ' + heartsOf(pp.id).length + '개'));
+          var row = el('div', 'rp-btns');
+          if (me && me.slug && !mineRoom) {
+            var done = gaveToday(pp.id), hb = el('button', 'primary', done ? '💗 오늘 줬어요' : '💗 하트 주기 (+' + HEART_EXP + ')');
+            hb.type = 'button'; hb.disabled = done;
+            hb.addEventListener('click', async function(){
+              hb.disabled = true;
+              var rr = await sb.rpc('pet_heart', { p_id: pp.id });
+              if (rr.error) { msg.textContent = rr.error.message; hb.disabled = false; return; }
+              window.__SV14_ROOMPETS(slug);
+            });
+            row.appendChild(hb);
+          }
+          var go = el('a', 'rp-go', mineRoom ? '🏡 내 정원 가기 →' : '🏡 정원 놀러 가기 →'); go.href = '#game-pet';
+          go.addEventListener('click', function(){ window.__SV14_PET_VISIT = { slug: slug, id: pp.id }; });
+          row.appendChild(go);
+          bd.appendChild(row); c.appendChild(bd); box.appendChild(c);
+        });
+        box.appendChild(msg);
+      };
+
       return {
         id: 'pet', icon: '🐣', title: '다마고치 키우기', custom: true,
         desc: '알을 받아 밥 주고 놀아 주고 씻겨 주며 키워요. 한 형님이 3마리까지 키울 수 있고, 3D 정원 섬에서 함께 돌아다녀요. 밤 상점에서 산 물건으로 정원을 꾸밀 수 있어요.',
-        help: '몇 시간마다 들러서 돌봐 주세요. 돌볼 때마다 경험치가 쌓여 알 → 아기 → 어린이 → 어른으로 자라요. 3D 화면은 끌어서 돌리고, 휠이나 두 손가락, + − 버튼으로 확대해요. 다마고치를 누르면 그 아이를 고르고 쓰다듬어요. 정원에 놓은 물건은 끌어서 옮길 수 있고, 산에는 다마고치들이 올라가요.',
+        help: '🏝️ 광장에서 형님들 아이를 구경하고, 다른 형님 아이에게 하루 한 번 하트를 주면 그 아이 경험치가 +3 올라요. 몇 시간마다 들러서 돌봐 주세요. 돌볼 때마다 경험치가 쌓여 알 → 아기 → 어린이 → 어른으로 자라요. 3D 화면은 끌어서 돌리고, 휠이나 두 손가락, + − 버튼으로 확대해요. 다마고치를 누르면 그 아이를 고르고 쓰다듬어요. 정원에 놓은 물건은 끌어서 옮길 수 있고, 산에는 다마고치들이 올라가요.',
         rankTitle: '형님들 다마고치',
         reset: function(){ acts = {}; view = null; placing = null; selected = -1; adopting = false; },
-        enter: function(){ uiT = 0; ensureWorld(); loadMine().catch(function(){}); loadList().catch(function(){}); renderPanels(); },
+        enter: function(){
+          uiT = 0; ensureWorld(); loadMine().catch(function(){}); loadList().catch(function(){});
+          var pv = window.__SV14_PET_VISIT; window.__SV14_PET_VISIT = null;
+          if (pv) { if (me && pv.slug === me.slug) goHome(pv.id); else openView(pv.slug, pv.id).catch(function(){}); }
+          renderPanels();
+        },
         hubInfo: function(tEl){
           var sb = window.__SV14_SB;
           if (!sb || !tEl) return;
@@ -5444,6 +5636,7 @@ window.__SV14_BOOT = function(){
     renderPreview();
     startRoomLoop();
     showSavedNote(m);
+    if (window.__SV14_ROOMPETS) window.__SV14_ROOMPETS(m.slug).catch(function(){});
     saveBtn.disabled = false;
     window.scrollTo(0, 0);
   }
