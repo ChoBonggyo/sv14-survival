@@ -4513,7 +4513,7 @@ window.__SV14_BOOT = function(){
             ez = 0.68; ey = 0.12; bz = 0.46;
           } else {
             var legC = kind === 'sheep' || kind === 'horse' ? C.dark : C.fur;
-            [[-0.42, 0.34], [0.42, 0.34], [-0.42, -0.34], [0.42, -0.34]].forEach(function(q){ R.legs.push(part(body, S, legC, q[0], 0.26, q[1], 0.3, 0.32, 0.3)); });
+            [[-0.36, 0.1], [0.36, 0.1]].forEach(function(q){ R.legs.push(part(body, S, legC, q[0], 0.24, q[1], 0.32, 0.3, 0.4)); });
             if (kind === 'sheep') {
               part(body, S, C.fur, 0, 0.95, 0, 0.8, 0.72, 0.75);
               for (var w = 0; w < 9; w++) { var wa = w / 9 * Math.PI * 2; part(body, S, C.fur, Math.cos(wa) * 0.62, 0.95 + (w % 2) * 0.22, Math.sin(wa) * 0.55, 0.38); }
