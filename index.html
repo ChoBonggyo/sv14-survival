@@ -383,6 +383,11 @@ textarea{font:.85rem/1.55 var(--mono);resize:vertical}
 .game-hud[hidden]{display:none}
 .pet-ui[hidden],.pet-ui [hidden]{display:none}
 .pet-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.pet-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.pet-tab{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font:inherit;font-weight:700;color:inherit;cursor:pointer}
+.pet-tab.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.pet-tab.add{border-style:dashed}
+.pet-tab.add.on{background:var(--surface);color:var(--accent);border-color:var(--accent)}
 .pet-head b{font-size:1.1rem}
 .pet-head span{font-size:.88rem;color:var(--muted)}
 .pet-bars{display:grid;gap:6px}
@@ -1207,6 +1212,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
           <div class="game-overlay" id="g-overlay"><p id="g-msg"></p><button type="button" class="primary" id="g-start">시작하기</button></div>
         </div>
         <div class="pet-ui" id="pet-ui" hidden>
+          <div class="pet-tabs" id="pet-tabs" role="group" aria-label="내 다마고치 고르기" hidden></div>
           <div class="pet-head"><b id="pet-name">다마고치 키우기</b><span id="pet-stage"></span></div>
           <div class="pet-bars" id="pet-bars">
             <div class="pet-bar"><span>배부름</span><i><em id="pet-food"></em></i><b id="pet-food-n">0</b></div>
@@ -1219,7 +1225,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
             <button type="button" data-act="play">⚽ 놀아 주기</button>
             <button type="button" data-act="wash">🛁 씻기기</button>
           </div>
-          <button type="button" id="pet-back" hidden>← 내 다마고치로 돌아가기</button>
+          <button type="button" id="pet-back" hidden>← 내 정원으로 돌아가기</button>
           <div class="pet-shop" id="pet-shop" hidden>
             <div class="ps-head"><b>🌰 밤 상점</b><span>내 밤 <b id="ps-nuts">—</b>개 · 미니홈피에서 출석하면 매일 2개</span></div>
             <div class="ps-items" id="ps-items"></div>
@@ -1237,7 +1243,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
             <button type="button" id="pd-cancel" hidden>놓기 취소</button>
           </div>
           <form class="pet-adopt" id="pet-adopt" hidden>
-            <b>알을 하나 받아 가세요!</b>
+            <b id="pet-adopt-title">알을 하나 받아 가세요!</b>
             <label for="pet-new-name">이름 (12자까지)<input type="text" id="pet-new-name" maxlength="12" placeholder="예: 밤톨이"></label>
             <label for="pet-new-kind">어떤 동물로 자랄까요?<select id="pet-new-kind"></select></label>
             <button type="submit" class="primary">알 받기</button>
@@ -2823,11 +2829,11 @@ window.__SV14_BOOT = function(){
     // ---------- 공통 엔진 ----------
 
 
-    // ---- 다마고치 3D: 동물 7종 + 넓은 정원 섬 + 밤 상점 + 물건 배치 ----
+    // ---- 다마고치 3D: 동물 8종 + 넓은 정원 섬 + 밤 상점 + 물건 배치 ----
     // three.js는 다마고치 페이지를 처음 열 때만 불러와요.
     var PET_KINDS = [
       { id: 'cat', label: '고양이' }, { id: 'bear', label: '곰' }, { id: 'dog', label: '강아지' }, { id: 'sheep', label: '양' },
-      { id: 'monkey', label: '원숭이' }, { id: 'horse', label: '말' }, { id: 'bird', label: '새' }
+      { id: 'monkey', label: '원숭이' }, { id: 'horse', label: '말' }, { id: 'bird', label: '새' }, { id: 'turtle', label: '거북이' }
     ];
     var PET_COL = {
       cat: { fur: '#f7ab62', light: '#fff1de', dark: '#e3873f', acc: '#e4553f' },
@@ -2836,7 +2842,8 @@ window.__SV14_BOOT = function(){
       sheep: { fur: '#fffaf0', light: '#f7dfc6', dark: '#7a553c', acc: '#f48fb1' },
       monkey: { fur: '#b8875c', light: '#f7dfc0', dark: '#8a6040', acc: '#f6cd4a' },
       horse: { fur: '#e4aa6d', light: '#fcedd6', dark: '#8f5634', acc: '#e4553f' },
-      bird: { fur: '#8fccf6', light: '#fff7df', dark: '#f8d75c', acc: '#f7a03c' }
+      bird: { fur: '#8fccf6', light: '#fff7df', dark: '#f8d75c', acc: '#f7a03c' },
+      turtle: { fur: '#a9dd8a', light: '#f5f0c8', dark: '#5fa452', acc: '#e4553f' }
     };
     var SHOP = [
       { id: 'flower', label: '꽃밭', icon: '🌷', price: 1 },
@@ -2869,11 +2876,15 @@ window.__SV14_BOOT = function(){
       return threeP;
     }
 
-    // ---------- 5) 다마고치 키우기 ----------
+    // ---------- 5) 다마고치 키우기 (형님마다 최대 3마리, 정원은 하나) ----------
     var petG = (function(){
       var RATE = { food: 4, fun: 3, wash: 2 };
       var STAGES = [[0, '알'], [4, '아기'], [40, '어린이'], [150, '어른']];
-      var mineP = null, viewP = null, loaded = false, busy = false, act = null, myNuts = null;
+      var MAX_PETS = 3;
+      var KIND_ICON = { cat: '🐱', bear: '🐻', dog: '🐶', sheep: '🐑', monkey: '🐵', horse: '🐴', bird: '🐦', turtle: '🐢' };
+      var my = { pets: [], owned: {}, garden: [] }, view = null, selId = null;
+      var loaded = false, busy = false, adopting = false, myNuts = null;
+      var acts = {};
       var placing = null, selected = -1, saveTimer = 0, uiT = 0;
       var W = null, worldFail = false;
       function $(id){ return document.getElementById(id); }
@@ -2889,11 +2900,20 @@ window.__SV14_BOOT = function(){
         if (Math.min(v.food, v.fun, v.wash) <= 0 || a2 < 15) return ['🤒', '아파요'];
         return a2 >= 70 ? ['😊', '행복해요'] : a2 >= 40 ? ['🙂', '괜찮아요'] : ['😢', '시무룩해요'];
       }
-      function shown(){ return viewP || mineP; }
-      function isMine(){ return !!(mineP && !viewP); }
-      function layout(){ var pp = shown(); return pp && Array.isArray(pp.garden) ? pp.garden : []; }
-      function owned(){ return mineP && mineP.owned ? mineP.owned : {}; }
-      function placedCount(id){ return (mineP && Array.isArray(mineP.garden) ? mineP.garden : []).filter(function(e){ return e.id === id; }).length; }
+      function scope(){ return view || (me && me.slug && loaded ? my : null); }
+      function isMine(){ return !view && !!(me && me.slug); }
+      function selPet(){
+        var sc = scope();
+        if (!sc || !sc.pets.length) return null;
+        var want = view ? view.sel : selId;
+        for (var i = 0; i < sc.pets.length; i++) if (sc.pets[i].id === want) return sc.pets[i];
+        return sc.pets[0];
+      }
+      function shown(){ return selPet(); }
+      function layout(){ var sc = scope(); return sc && Array.isArray(sc.garden) ? sc.garden : []; }
+      function owned(){ return my.owned || {}; }
+      function placedCount(id){ return my.garden.filter(function(e){ return e.id === id; }).length; }
+      function selectPet(id){ if (view) view.sel = id; else { selId = id; adopting = false; } renderPanels(); }
 
       // ---------- 화면 아래 정보 ----------
       function setBar(id, val, txt){
@@ -2903,23 +2923,46 @@ window.__SV14_BOOT = function(){
         $('pet-' + id + '-n').textContent = txt;
       }
       function hint(){
-        var pp = shown(), mineOk = !!(me && me.slug);
+        var pp = shown(), mineOk = !!(me && me.slug), sc = scope();
         if (worldFail) return '3D 화면을 열지 못했어요. 브라우저를 최신으로 바꾸거나 다른 기기에서 열어 주세요.';
         if (!W) return '3D 정원을 불러오는 중...';
         if (placing) return '놓을 곳을 누르세요. 화면을 끌면 시점이 돌아가요.';
         if (!pp) return mineOk ? (loaded ? '아래에서 알을 받아 키워 보세요!' : '') : '로그인하고 내 방을 고르면 나만의 다마고치를 키울 수 있어요.';
-        if (viewP) return nameOfMember(viewP.slug) + '네 정원을 구경 중이에요.';
+        if (view) return nameOfMember(view.slug) + '네 정원을 구경 중이에요.';
+        if (sc && sc.pets.length > 1) return '다마고치를 누르면 그 아이를 돌볼 수 있어요.';
         return '';
+      }
+      function renderTabs(){
+        var box = $('pet-tabs'), sc = scope(), sp = selPet();
+        box.textContent = '';
+        if (sc) {
+          sc.pets.forEach(function(pp){
+            var b = el('button', 'pet-tab' + (sp && pp.id === sp.id && !adopting ? ' on' : ''), (KIND_ICON[pp.kind] || '🐣') + ' ' + pp.name);
+            b.type = 'button';
+            b.setAttribute('aria-pressed', sp && pp.id === sp.id && !adopting ? 'true' : 'false');
+            b.addEventListener('click', function(){ selectPet(pp.id); });
+            box.appendChild(b);
+          });
+          if (isMine() && loaded && my.pets.length && my.pets.length < MAX_PETS) {
+            var add = el('button', 'pet-tab add' + (adopting ? ' on' : ''), '＋ 새 알 받기 (' + my.pets.length + '/' + MAX_PETS + ')');
+            add.type = 'button';
+            add.addEventListener('click', function(){ adopting = !adopting; renderPanels(); if (adopting) $('pet-new-name').focus(); });
+            box.appendChild(add);
+          }
+        }
+        box.hidden = box.childNodes.length < 2;
       }
       function renderUi(){
         var pp = shown(), mineOk = !!(me && me.slug);
         $('pw-hint').textContent = hint();
-        $('pet-adopt').hidden = !(loaded && mineOk && !mineP && !viewP);
-        $('pet-actions').hidden = !isMine();
-        $('pet-back').hidden = !(viewP && mineP);
-        $('pet-bars').hidden = !pp;
-        $('pet-shop').hidden = !isMine();
-        $('pet-deco').hidden = !isMine();
+        var showAdopt = loaded && mineOk && !view && (my.pets.length === 0 || adopting) && my.pets.length < MAX_PETS;
+        $('pet-adopt').hidden = !showAdopt;
+        $('pet-adopt-title').textContent = my.pets.length ? '새 알을 하나 더 받아 가세요! (' + my.pets.length + '/' + MAX_PETS + ')' : '알을 하나 받아 가세요!';
+        $('pet-actions').hidden = !(isMine() && pp && !adopting);
+        $('pet-back').hidden = !(view && mineOk);
+        $('pet-bars').hidden = !pp || adopting;
+        $('pet-shop').hidden = !(isMine() && my.pets.length);
+        $('pet-deco').hidden = !(isMine() && my.pets.length);
         var btns = $('pet-actions').querySelectorAll('button');
         for (var i = 0; i < btns.length; i++) btns[i].disabled = busy;
         if (!pp) {
@@ -2928,7 +2971,7 @@ window.__SV14_BOOT = function(){
           return;
         }
         var v = now3(pp), sg = stageOf(pp), md = mood(v);
-        $('pet-name').textContent = pp.name + (viewP ? ' · ' + nameOfMember(pp.slug) + '네' : '');
+        $('pet-name').textContent = (KIND_ICON[pp.kind] || '') + ' ' + pp.name + (view ? ' · ' + nameOfMember(pp.slug) + '네' : '');
         $('pet-stage').textContent = STAGES[sg][1] + ' · Lv.' + (Math.floor(pp.exp / 10) + 1) + ' · ' + md[0] + ' ' + md[1];
         setBar('food', v.food, Math.round(v.food));
         setBar('fun', v.fun, Math.round(v.fun));
@@ -2972,31 +3015,43 @@ window.__SV14_BOOT = function(){
         if (!any) box.appendChild(el('p', 'pd-empty', '밤 상점에서 물건을 사면 여기에 들어와요. 누르고 정원 바닥을 누르면 놓여요.'));
         $('pd-sel').hidden = !(selected >= 0 && !placing);
         $('pd-cancel').hidden = !placing;
-        var L = layout();
+        var L = my.garden;
         if (selected >= 0 && L[selected]) $('pd-sel-name').textContent = SHOP_BY[L[selected].id].icon + ' ' + SHOP_BY[L[selected].id].label + ' 선택됨';
         $('pd-state').textContent = placing ? '정원 바닥을 눌러 놓으세요' : selected >= 0 ? '돌리거나 옮기거나 보관함에 넣을 수 있어요' : '정원에 놓인 물건을 누르면 고를 수 있어요';
         $('pw-hint').textContent = hint();
       }
-      function renderPanels(){ renderUi(); if (isMine()) { renderShop(); renderInv(); } }
+      function renderPanels(){ renderTabs(); renderUi(); if (isMine() && my.pets.length) { renderShop(); renderInv(); } }
 
       // ---------- 서버 ----------
       async function loadMine(){
         var sb = window.__SV14_SB;
         if (!(me && me.slug) || !sb) { loaded = true; renderPanels(); return; }
-        var r = await sb.from('pets').select('*').eq('slug', me.slug).maybeSingle();
+        var r = await sb.from('pets').select('*').eq('slug', me.slug).order('id', { ascending: true });
+        var g = await sb.from('gardens').select('owned,garden').eq('slug', me.slug).maybeSingle();
         var n = await sb.from('members').select('nuts').eq('slug', me.slug).maybeSingle();
         loaded = true;
-        if (r.error) $('pet-msg').textContent = '다마고치 준비 중이에요.';
-        mineP = r.data || null;
-        if (mineP) { if (!Array.isArray(mineP.garden)) mineP.garden = []; if (!mineP.owned) mineP.owned = {}; }
+        if (r.error || g.error) $('pet-msg').textContent = '다마고치 준비 중이에요. (관리자가 설정 중)';
+        my.pets = r.data || [];
+        my.owned = g.data && g.data.owned ? g.data.owned : {};
+        my.garden = g.data && Array.isArray(g.data.garden) ? g.data.garden : [];
         myNuts = n.data ? n.data.nuts : null;
+        if (!my.pets.some(function(p2){ return p2.id === selId; })) selId = my.pets.length ? my.pets[0].id : null;
         renderPanels();
         if (W) W.rebuild();
+      }
+      async function openView(slug, focusId, rows){
+        view = { slug: slug, pets: rows.filter(function(x){ return x.slug === slug; }).sort(function(a2, b2){ return a2.id - b2.id; }), owned: {}, garden: [], sel: focusId };
+        acts = {}; placing = null; selected = -1; adopting = false;
+        $('pet-msg').textContent = '';
+        if (W) { W.clearGhost(); W.rebuild(); }
+        renderPanels();
+        var g = await window.__SV14_SB.from('gardens').select('garden').eq('slug', slug).maybeSingle();
+        if (view && view.slug === slug && g.data && Array.isArray(g.data.garden)) { view.garden = g.data.garden; if (W) W.rebuild(); }
       }
       async function loadList(){
         var sb = window.__SV14_SB;
         if (!sb) return;
-        var r = await sb.from('pets').select('*').order('exp', { ascending: false }).limit(30);
+        var r = await sb.from('pets').select('*').order('exp', { ascending: false }).limit(60);
         if (cur !== petG) return;
         rankEl.textContent = '';
         if (r.error) { rankNote.textContent = '다마고치 준비 중이에요.'; return; }
@@ -3006,36 +3061,37 @@ window.__SV14_BOOT = function(){
           var li = el('li', me && row.slug === me.slug ? 'me' : null);
           var bt = el('button', 'pet-pick'); bt.type = 'button';
           bt.appendChild(el('span', 'rk', String(i + 1)));
-          var nm = el('span', 'nm', row.name + ' ');
+          var nm = el('span', 'nm', (KIND_ICON[row.kind] || '') + ' ' + row.name + ' ');
           nm.appendChild(el('small', null, nameOfMember(row.slug)));
           bt.appendChild(nm);
           bt.appendChild(el('b', null, STAGES[stageOf(row)][1] + ' ' + mood(now3(row))[0]));
           bt.addEventListener('click', function(){
-            viewP = me && row.slug === me.slug ? null : row;
-            if (viewP && !Array.isArray(viewP.garden)) viewP.garden = [];
-            act = null; placing = null; selected = -1;
-            $('pet-msg').textContent = '';
-            if (W) { W.clearGhost(); W.rebuild(); }
-            renderPanels();
+            if (me && row.slug === me.slug) {
+              view = null; selId = row.id; adopting = false; acts = {}; placing = null; selected = -1;
+              $('pet-msg').textContent = '';
+              if (W) { W.clearGhost(); W.rebuild(); }
+              renderPanels();
+            } else openView(row.slug, row.id, r.data).catch(function(){});
           });
           li.appendChild(bt);
           rankEl.appendChild(li);
         });
       }
       async function doAct(a3){
-        if (busy || !isMine()) return;
+        var pp = selPet();
+        if (busy || !isMine() || !pp) return;
         busy = true; renderUi(); $('pet-msg').textContent = '';
-        var r = await window.__SV14_SB.rpc('pet_action', { p_action: a3 });
+        var r = await window.__SV14_SB.rpc('pet_action', { p_id: pp.id, p_action: a3 });
         busy = false;
         if (r.error) { $('pet-msg').textContent = r.error.message; renderUi(); return; }
-        var before = stageOf(mineP), keep = { garden: mineP.garden, owned: mineP.owned };
-        mineP = Array.isArray(r.data) ? r.data[0] : r.data;
-        mineP.garden = keep.garden; mineP.owned = keep.owned;
-        act = { k: a3, t: 2.2 };
-        if (W) W.burst(a3);
-        var after = stageOf(mineP);
-        $('pet-msg').textContent = after > before ? '와! ' + STAGES[after][1] + '(으)로 자랐어요!' : { feed: '냠냠! 맛있어요.', play: '신난다! 또 놀아요.', wash: '뽀득뽀득 깨끗해졌어요.' }[a3];
-        renderUi();
+        var row = Array.isArray(r.data) ? r.data[0] : r.data;
+        var before = stageOf(pp);
+        for (var i = 0; i < my.pets.length; i++) if (my.pets[i].id === pp.id) my.pets[i] = row;
+        acts[pp.id] = { k: a3, t: 2.2 };
+        if (W) W.burst(a3, pp.id);
+        var after = stageOf(row);
+        $('pet-msg').textContent = after > before ? '와! ' + row.name + '이(가) ' + STAGES[after][1] + '(으)로 자랐어요!' : { feed: '냠냠! 맛있어요.', play: '신난다! 또 놀아요.', wash: '뽀득뽀득 깨끗해졌어요.' }[a3];
+        renderPanels();
         loadList().catch(function(){});
       }
       async function buy(it){
@@ -3045,14 +3101,13 @@ window.__SV14_BOOT = function(){
         busy = false;
         if (r.error) { $('pet-msg').textContent = r.error.message; renderShop(); return; }
         myNuts = typeof r.data === 'number' ? r.data : (myNuts || 0) - it.price;
-        mineP.owned[it.id] = (mineP.owned[it.id] || 0) + 1;
+        my.owned[it.id] = (my.owned[it.id] || 0) + 1;
         $('pet-msg').textContent = it.icon + ' ' + it.label + ' 샀어요! "정원 꾸미기"에서 누르고 놓을 곳을 정하세요.';
         renderShop(); renderInv();
       }
       function queueSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(function(){ saveNow().catch(function(){}); }, 500); }
       async function saveNow(){
-        if (!mineP) return;
-        var r = await window.__SV14_SB.rpc('save_garden', { p_layout: mineP.garden || [] });
+        var r = await window.__SV14_SB.rpc('save_garden', { p_layout: my.garden });
         $('pet-msg').textContent = r.error ? '저장하지 못했어요: ' + r.error.message : '정원을 저장했어요.';
         if (r.error) loadMine().catch(function(){});
       }
@@ -3060,14 +3115,14 @@ window.__SV14_BOOT = function(){
       // ---------- 배치 ----------
       function startPlace(id, idx){
         if (!isMine()) return;
-        placing = { id: id, idx: idx, r: idx >= 0 ? (mineP.garden[idx].r || 0) : 0 };
+        placing = { id: id, idx: idx, r: idx >= 0 ? (my.garden[idx].r || 0) : 0 };
         selected = -1;
         if (W) { W.makeGhost(id, placing.r); W.rebuild(); }
         renderInv();
       }
       function cancelPlace(){ placing = null; if (W) { W.clearGhost(); W.rebuild(); } renderInv(); }
       function commitPlace(x, z){
-        var L = mineP.garden;
+        var L = my.garden;
         x = Math.round(x * 100) / 100; z = Math.round(z * 100) / 100;
         if (placing.idx >= 0 && L[placing.idx]) { L[placing.idx].x = x; L[placing.idx].z = z; }
         else L.push({ id: placing.id, x: x, z: z, r: placing.r });
@@ -3075,15 +3130,15 @@ window.__SV14_BOOT = function(){
         if (W) { W.clearGhost(); W.rebuild(); }
         renderInv(); queueSave();
       }
-      $('pd-rot').addEventListener('click', function(){ var e = mineP && mineP.garden[selected]; if (!e) return; e.r = Math.round(((e.r || 0) + Math.PI / 4) * 1000) / 1000; if (W) W.rebuild(); queueSave(); });
-      $('pd-move').addEventListener('click', function(){ var e = mineP && mineP.garden[selected]; if (e) startPlace(e.id, selected); });
-      $('pd-store').addEventListener('click', function(){ if (!mineP || selected < 0) return; mineP.garden.splice(selected, 1); selected = -1; if (W) W.rebuild(); renderInv(); queueSave(); });
+      $('pd-rot').addEventListener('click', function(){ var e = my.garden[selected]; if (!e) return; e.r = Math.round(((e.r || 0) + Math.PI / 4) * 1000) / 1000; if (W) W.rebuild(); queueSave(); });
+      $('pd-move').addEventListener('click', function(){ var e = my.garden[selected]; if (e) startPlace(e.id, selected); });
+      $('pd-store').addEventListener('click', function(){ if (selected < 0) return; my.garden.splice(selected, 1); selected = -1; if (W) W.rebuild(); renderInv(); queueSave(); });
       $('pd-done').addEventListener('click', function(){ selected = -1; if (W) W.rebuild(); renderInv(); });
       $('pd-cancel').addEventListener('click', cancelPlace);
       window.addEventListener('keydown', function(e){ if (e.key === 'Escape' && placing && cur === petG && !gameView.hidden) cancelPlace(); });
       var btns0 = $('pet-actions').querySelectorAll('button');
       for (var bi = 0; bi < btns0.length; bi++) btns0[bi].addEventListener('click', function(){ doAct(this.getAttribute('data-act')); });
-      $('pet-back').addEventListener('click', function(){ viewP = null; act = null; $('pet-msg').textContent = ''; if (W) W.rebuild(); renderPanels(); });
+      $('pet-back').addEventListener('click', function(){ view = null; acts = {}; $('pet-msg').textContent = ''; if (W) W.rebuild(); renderPanels(); });
       $('pet-adopt').addEventListener('submit', async function(ev){
         ev.preventDefault();
         var nm = $('pet-new-name').value.trim();
@@ -3092,6 +3147,9 @@ window.__SV14_BOOT = function(){
         var r = await window.__SV14_SB.rpc('pet_adopt', { p_name: nm, p_kind: kindSel.value });
         if (r.error) { $('pet-msg').textContent = r.error.message; return; }
         $('pet-msg').textContent = '알을 받았어요! 밥 주고 놀아 주면 곧 깨어나요.';
+        $('pet-new-name').value = '';
+        if (typeof r.data === 'number') selId = r.data;
+        adopting = false;
         await loadMine();
         loadList().catch(function(){});
       });
@@ -3251,8 +3309,6 @@ window.__SV14_BOOT = function(){
         }
 
         // ---- 다마고치 몸 ----
-        var rig = null, rigKey = '';
-        var pet = { x: 0, z: 2, heading: 0, tx: 0, tz: 2, state: 'idle', t: 1, ph: 0, blink: 2, look: 0 };
         function buildPet(kind, sg){
           var C = PET_COL[kind] || PET_COL.cat, S = G.S;
           var root = new T.Group(), body = new T.Group(); root.add(body);
@@ -3280,6 +3336,19 @@ window.__SV14_BOOT = function(){
             var beak = new T.Mesh(new T.ConeGeometry(0.2, 0.42, 14), mat(C.acc)); beak.rotation.x = Math.PI / 2; beak.position.set(0, -0.02, 1.27); head.add(beak);
             part(head, S, C.fur, 0, 1.25, -0.1, 0.17, 0.34, 0.17); part(head, S, C.fur, 0.2, 1.15, -0.18, 0.13, 0.26, 0.13);
             ez = 1.08; ey = 0.3; bz = 0.95;
+          } else if (kind === 'turtle') {
+            [[-0.62, 0.5], [0.62, 0.5], [-0.62, -0.5], [0.62, -0.5]].forEach(function(q){ R.legs.push(part(body, S, C.fur, q[0], 0.22, q[1], 0.3, 0.26, 0.32)); });
+            R.legY = 0.22;
+            part(body, S, C.light, 0, 0.55, 0, 0.98, 0.3, 1.02);
+            part(body, S, C.dark, 0, 0.82, -0.05, 1.02, 0.7, 1.1);
+            var rim = new T.Mesh(new T.TorusGeometry(1.0, 0.1, 8, 32), mat('#d9b96e')); rim.rotation.x = Math.PI / 2; rim.position.set(0, 0.62, -0.05); rim.scale.set(1, 1.08, 1); rim.castShadow = true; body.add(rim);
+            part(body, S, '#7fc66c', 0, 1.5, -0.05, 0.34, 0.1, 0.34);
+            for (var hx = 0; hx < 6; hx++) { var ha = hx / 6 * Math.PI * 2 + 0.5; part(body, S, '#7fc66c', Math.cos(ha) * 0.62, 1.36, -0.05 + Math.sin(ha) * 0.66, 0.24, 0.09, 0.24); }
+            var tt = new T.Group(); tt.position.set(0, 0.5, -1.1); part(tt, S, C.fur, 0, 0, -0.05, 0.12, 0.1, 0.2); body.add(tt); R.tail = tt;
+            head.position.set(0, 1.42, 1.0);
+            part(head, S, C.fur, 0, 0, 0, 0.8, 0.74, 0.78);
+            var tmo = new T.Mesh(new T.TorusGeometry(0.08, 0.022, 6, 14, Math.PI), mat('#3f5a32')); tmo.rotation.z = Math.PI; tmo.position.set(0, -0.2, 0.75); head.add(tmo); R.mouth = tmo;
+            ez = 0.68; ey = 0.12; bz = 0.46;
           } else {
             var legC = kind === 'sheep' || kind === 'horse' ? C.dark : C.fur;
             [[-0.42, 0.34], [0.42, 0.34], [-0.42, -0.34], [0.42, -0.34]].forEach(function(q){ R.legs.push(part(body, S, legC, q[0], 0.26, q[1], 0.3, 0.32, 0.3)); });
@@ -3352,7 +3421,7 @@ window.__SV14_BOOT = function(){
           // 소품 (어린이부터)
           if (sg >= 2) {
             var neckY = kind === 'bird' ? 0.72 : 1.45, neckR = kind === 'bird' ? 0.98 : 0.6;
-            if (kind !== 'dog' && kind !== 'sheep' && kind !== 'monkey') {
+            if (kind !== 'dog' && kind !== 'sheep' && kind !== 'monkey' && kind !== 'turtle') {
               var ring = new T.Mesh(new T.TorusGeometry(neckR, 0.09, 8, 28), mat(kind === 'bird' ? '#f48fb1' : C.acc)); ring.rotation.x = Math.PI / 2; ring.position.y = neckY; ring.castShadow = true; body.add(ring);
             }
             if (kind === 'cat' || kind === 'horse') {
@@ -3371,20 +3440,35 @@ window.__SV14_BOOT = function(){
             } else if (kind === 'monkey') {
               [-1, 1].forEach(function(sx){ part(body, S, C.acc, sx * 0.4, 1.0, 0.52, 0.22, 0.42, 0.14); });
             }
+            if (kind === 'turtle') {
+              var tr = new T.Mesh(new T.TorusGeometry(0.42, 0.08, 8, 24), mat(C.acc)); tr.rotation.x = Math.PI / 2 - 0.35; tr.position.set(0, 1.2, 0.72); tr.castShadow = true; body.add(tr);
+              var tb = new T.Mesh(new T.ConeGeometry(0.28, 0.36, 3), mat(C.acc)); tb.rotation.x = Math.PI; tb.scale.z = 0.35; tb.position.set(0, 1.0, 1.08); body.add(tb);
+            }
           }
           root.scale.setScalar([1, 0.55, 0.8, 1.05][sg]);
           return R;
         }
-        function syncPet(){
-          var pp = shown(), key = pp ? pp.slug + '|' + pp.kind + '|' + stageOf(pp) : 'none';
-          if (key === rigKey) return;
-          if (rig) scene.remove(rig.root);
-          rigKey = key;
-          var kind = pp ? pp.kind : 'cat', sg = pp ? stageOf(pp) : 0;
-          rig = buildPet(PET_COL[kind] ? kind : 'cat', sg);
-          scene.add(rig.root);
-          if (blocked(pet.x, pet.z, 0.8)) { pet.x = 0; pet.z = 2; }
-          pet.state = 'idle'; pet.t = 1;
+        // ---- 다마고치 여러 마리 ----
+        var rigs = {};
+        var marker = new T.Mesh(new T.ConeGeometry(0.32, 0.55, 14), mat('#ffd34d'));
+        marker.rotation.x = Math.PI; marker.visible = false; scene.add(marker);
+        function syncPets(){
+          var sc = scope(), list = sc && sc.pets.length ? sc.pets : [null], seen = {};
+          list.forEach(function(pp, i){
+            var id = pp ? String(pp.id) : 'guest', key = pp ? pp.kind + '|' + stageOf(pp) : 'egg';
+            seen[id] = true;
+            var e = rigs[id];
+            if (!e || e.key !== key) {
+              if (e) scene.remove(e.rig.root);
+              var rg = buildPet(pp && PET_COL[pp.kind] ? pp.kind : 'cat', pp ? stageOf(pp) : 0);
+              scene.add(rg.root);
+              var s0 = e ? e.s : { x: (i - (list.length - 1) / 2) * 3.4, z: 2, heading: 0, tx: 0, tz: 2, state: 'idle', t: 1 + i, ph: i * 1.7, blink: 2 + i };
+              rigs[id] = e = { rig: rg, key: key, s: s0 };
+              if (blocked(s0.x, s0.z, 0.8)) { s0.x = (i - 1) * 2; s0.z = 0; }
+            }
+            e.pp = pp;
+          });
+          Object.keys(rigs).forEach(function(id){ if (!seen[id]) { scene.remove(rigs[id].rig.root); delete rigs[id]; } });
         }
         function blocked(x, z, rad){
           if (Math.sqrt(x * x + z * z) > ROAM) return true;
@@ -3397,14 +3481,15 @@ window.__SV14_BOOT = function(){
           }
           return false;
         }
-        function pickTarget(){
+        function pickTarget(s){
           for (var i = 0; i < 14; i++) {
             var a2 = Math.random() * Math.PI * 2, r2 = Math.random() * 14;
             var x = Math.cos(a2) * r2, z = Math.sin(a2) * r2;
-            if (!blocked(x, z, 0.9)) { pet.tx = x; pet.tz = z; pet.state = 'walk'; return; }
+            if (!blocked(x, z, 0.9)) { s.tx = x; s.tz = z; s.state = 'walk'; return; }
           }
-          pet.state = 'idle'; pet.t = 1;
+          s.state = 'idle'; s.t = 1;
         }
+        function scaleOf(pp){ return [1.1, 0.55, 0.8, 1.05][pp ? stageOf(pp) : 0]; }
 
         // ---- 효과 (하트, 물방울, 밥) ----
         var TEX = {};
@@ -3423,12 +3508,13 @@ window.__SV14_BOOT = function(){
           fxGroup.add(sp);
           fx.push({ o: sp, vy: vy, life: life, max: life, vx: (Math.random() - 0.5) * 0.8 });
         }
-        function burst(kind){
-          var pp = shown(); if (!pp) return;
-          var h = 3.2 * [1, 0.55, 0.8, 1.05][stageOf(pp)];
+        function burst(kind, id){
+          var e = rigs[String(id)];
+          if (!e) return;
+          var s = e.s, h = 3.2 * scaleOf(e.pp);
           var set = { feed: ['🍙', '😋', '✨'], play: ['💕', '⚽', '🎵'], wash: ['💦', '💧', '✨'], pet: ['💗'] }[kind] || ['💗'];
           for (var i = 0; i < (kind === 'pet' ? 2 : 7); i++) {
-            emit(set[i % set.length], pet.x + (Math.random() - 0.5) * 1.6, h + Math.random() * 0.8, pet.z + (Math.random() - 0.5) * 1.6, 1.2 + Math.random(), 1.6 + Math.random() * 0.6, 0.8 + Math.random() * 0.4);
+            emit(set[i % set.length], s.x + (Math.random() - 0.5) * 1.6, h + Math.random() * 0.8, s.z + (Math.random() - 0.5) * 1.6, 1.2 + Math.random(), 1.6 + Math.random() * 0.6, 0.8 + Math.random() * 0.4);
           }
         }
 
@@ -3463,15 +3549,31 @@ window.__SV14_BOOT = function(){
           for (var i = 0; i < h.length; i++) { var o = h[i].object; while (o && o.parent !== decoGroup) o = o.parent; if (o && o.userData.idx != null) return o.userData.idx; }
           return -1;
         }
+        function pickPet(e){
+          setRay(e);
+          var roots = [], ids = Object.keys(rigs);
+          ids.forEach(function(id){ roots.push(rigs[id].rig.root); });
+          var h = ray.intersectObjects(roots, true);
+          if (!h.length) return null;
+          var o = h[0].object;
+          while (o && roots.indexOf(o) < 0) o = o.parent;
+          for (var i = 0; i < ids.length; i++) if (rigs[ids[i]].rig.root === o) return rigs[ids[i]];
+          return null;
+        }
         function onClick(e){
           if (placing && isMine()) { var g = groundAt(e); if (g) commitPlace(g.x, g.z); return; }
+          var hitPet = pickPet(e);
+          if (hitPet && hitPet.pp) {
+            selectPet(hitPet.pp.id);
+            burst('pet', hitPet.pp.id);
+            if (!acts[hitPet.pp.id]) acts[hitPet.pp.id] = { k: 'pet', t: 0.8 };
+            return;
+          }
           if (isMine()) {
             var idx = pickDeco(e);
             if (idx >= 0) { selected = idx; rebuild(); renderInv(); return; }
-            if (selected >= 0) { selected = -1; rebuild(); renderInv(); return; }
+            if (selected >= 0) { selected = -1; rebuild(); renderInv(); }
           }
-          var g2 = groundAt(e);
-          if (g2 && rig && Math.hypot(g2.x - pet.x, g2.z - pet.z) < 2.2) { burst('pet'); if (!act) act = { k: 'pet', t: 0.8 }; }
         }
         dom.addEventListener('pointerdown', function(e){
           try { dom.setPointerCapture(e.pointerId); } catch (er) {}
@@ -3503,7 +3605,7 @@ window.__SV14_BOOT = function(){
         dom.addEventListener('wheel', function(e){ e.preventDefault(); cam.r *= 1 + Math.max(-0.3, Math.min(0.3, e.deltaY * 0.001)); }, { passive: false });
 
         // ---- 매 프레임 ----
-        var lastW = 0, clock = 0;
+        var lastW = 0;
         function resize(){
           var w = box.clientWidth;
           if (!w || w === lastW) return;
@@ -3512,59 +3614,61 @@ window.__SV14_BOOT = function(){
           renderer.setSize(w, h);
           camera.aspect = w / h; camera.updateProjectionMatrix();
         }
-        function stepPet(dt){
-          if (!rig) return;
-          var pp = shown();
-          pet.ph += dt;
+        function stepPet(e, dt){
+          var rig = e.rig, s = e.s, pp = e.pp, act = pp ? acts[pp.id] : null;
+          s.ph += dt;
           var r0 = rig.root;
           if (rig.egg) {
-            r0.position.set(0, 0, 2); pet.x = 0; pet.z = 2;
+            r0.position.set(s.x, 0, s.z);
             var wob = pp ? (act ? 0.25 : 0.08) : 0.05;
-            rig.body.rotation.z = Math.sin(pet.ph * (act ? 14 : 3)) * wob;
+            rig.body.rotation.z = Math.sin(s.ph * (act ? 14 : 3)) * wob;
             return;
           }
           var md = pp ? mood(now3(pp))[1] : '괜찮아요', sad = md === '시무룩해요' || md === '아파요';
-          var speed = (sad ? 1.2 : 2.4) * (0.75 + 0.1 * stageOf(pp || { exp: 0 }));
+          var speed = (sad ? 1.2 : 2.4) * (0.75 + 0.1 * (pp ? stageOf(pp) : 0));
           var walking = false, hop = 0;
           if (act) {
-            hop = Math.abs(Math.sin(pet.ph * 9)) * 0.7;
-            pet.heading += (Math.atan2(camera.position.x - pet.x, camera.position.z - pet.z) - pet.heading) * Math.min(1, dt * 5);
-          } else if (pet.state === 'idle') {
-            pet.t -= dt;
-            if (pet.t <= 0) pickTarget();
+            hop = Math.abs(Math.sin(s.ph * 9)) * 0.7;
+            s.heading += (Math.atan2(camera.position.x - s.x, camera.position.z - s.z) - s.heading) * Math.min(1, dt * 5);
+          } else if (s.state === 'idle') {
+            s.t -= dt;
+            if (s.t <= 0) pickTarget(s);
           } else {
-            var dx = pet.tx - pet.x, dz = pet.tz - pet.z, dist = Math.sqrt(dx * dx + dz * dz);
-            if (dist < 0.2) { pet.state = 'idle'; pet.t = 1 + Math.random() * 3; }
+            var dx = s.tx - s.x, dz = s.tz - s.z, dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist < 0.2) { s.state = 'idle'; s.t = 1 + Math.random() * 3; }
             else {
-              var nx = pet.x + dx / dist * speed * dt, nz = pet.z + dz / dist * speed * dt;
-              if (blocked(nx, nz, 0.8) && !blocked(pet.x, pet.z, 0.8)) pickTarget();
-              else { pet.x = nx; pet.z = nz; walking = true; }
-              var want = Math.atan2(dx, dz), diff = want - pet.heading;
+              var nx = s.x + dx / dist * speed * dt, nz = s.z + dz / dist * speed * dt;
+              if (blocked(nx, nz, 0.8) && !blocked(s.x, s.z, 0.8)) pickTarget(s);
+              else { s.x = nx; s.z = nz; walking = true; }
+              var want = Math.atan2(dx, dz), diff = want - s.heading;
               while (diff > Math.PI) diff -= Math.PI * 2;
               while (diff < -Math.PI) diff += Math.PI * 2;
-              pet.heading += diff * Math.min(1, dt * 6);
+              s.heading += diff * Math.min(1, dt * 6);
             }
           }
-          var bob = walking ? Math.abs(Math.sin(pet.ph * 10)) * 0.22 : Math.sin(pet.ph * 2) * 0.03;
-          r0.position.set(pet.x, hop + Math.max(0, bob), pet.z);
-          r0.rotation.y = pet.heading;
-          rig.body.rotation.z = walking ? Math.sin(pet.ph * 10) * 0.06 : 0;
-          rig.legs.forEach(function(l, i){ l.position.y = 0.26 + (walking ? Math.max(0, Math.sin(pet.ph * 10 + (i % 2 === (i < 2 ? 0 : 1) ? 0 : Math.PI))) * 0.14 : 0); });
-          if (rig.tail) rig.tail.rotation.y = Math.sin(pet.ph * (walking || act ? 12 : 4)) * 0.45;
-          rig.wings.forEach(function(wg, i){ var s2 = i ? -1 : 1; wg.rotation.z = s2 * (walking || act ? 0.25 + Math.abs(Math.sin(pet.ph * 16)) * 0.7 : 0.12 + Math.sin(pet.ph * 3) * 0.06); });
-          if (rig.head) rig.head.rotation.x = sad ? 0.25 : Math.sin(pet.ph * 1.3) * 0.05;
-          pet.blink -= dt;
-          var happy = !!act || (md === '행복해요' && Math.sin(pet.ph * 0.7) > 0.85);
-          var ey = happy ? 0.3 : pet.blink < 0 ? 0.12 : 1;
-          if (pet.blink < -0.13) pet.blink = 2 + Math.random() * 3;
+          var bob = walking ? Math.abs(Math.sin(s.ph * 10)) * 0.22 : Math.sin(s.ph * 2) * 0.03;
+          r0.position.set(s.x, hop + Math.max(0, bob), s.z);
+          r0.rotation.y = s.heading;
+          rig.body.rotation.z = walking ? Math.sin(s.ph * 10) * 0.06 : 0;
+          rig.legs.forEach(function(l, i){ l.position.y = (rig.legY || 0.26) + (walking ? Math.max(0, Math.sin(s.ph * 10 + (i === 0 || i === 3 ? 0 : Math.PI))) * 0.14 : 0); });
+          if (rig.tail) rig.tail.rotation.y = Math.sin(s.ph * (walking || act ? 12 : 4)) * 0.45;
+          rig.wings.forEach(function(wg, i){ var s2 = i ? -1 : 1; wg.rotation.z = s2 * (walking || act ? 0.25 + Math.abs(Math.sin(s.ph * 16)) * 0.7 : 0.12 + Math.sin(s.ph * 3) * 0.06); });
+          if (rig.head) rig.head.rotation.x = sad ? 0.25 : Math.sin(s.ph * 1.3) * 0.05;
+          s.blink -= dt;
+          var happy = !!act || (md === '행복해요' && Math.sin(s.ph * 0.7) > 0.85);
+          var ey = happy ? 0.3 : s.blink < 0 ? 0.12 : 1;
+          if (s.blink < -0.13) s.blink = 2 + Math.random() * 3;
           rig.eyes.forEach(function(e2){ e2.scale.y = ey; });
           if (rig.mouth) rig.mouth.scale.set(1, sad ? -0.6 : 1, 1);
         }
         function frame(dt){
           resize();
-          clock += dt;
-          syncPet();
-          stepPet(dt);
+          syncPets();
+          var ids = Object.keys(rigs), sp = selPet(), sc = scope();
+          ids.forEach(function(id){ stepPet(rigs[id], dt); });
+          var me2 = sp ? rigs[String(sp.id)] : null;
+          marker.visible = !!(me2 && sc && sc.pets.length > 1);
+          if (marker.visible) marker.position.set(me2.s.x, (me2.pp && me2.pp.kind === 'turtle' ? 2.2 : 3.4) * scaleOf(me2.pp) + 0.9 + Math.sin(me2.s.ph * 4) * 0.15 + me2.rig.root.position.y, me2.s.z);
           clouds.rotation.y += dt * 0.01;
           for (var i = fx.length - 1; i >= 0; i--) {
             var f = fx[i];
@@ -3585,10 +3689,10 @@ window.__SV14_BOOT = function(){
 
       return {
         id: 'pet', icon: '🐣', title: '다마고치 키우기', custom: true,
-        desc: '알을 받아 밥 주고 놀아 주고 씻겨 주며 키워요. 3D 정원 섬을 자유롭게 돌아다니고, 밤 상점에서 산 물건으로 정원을 꾸밀 수 있어요.',
-        help: '몇 시간마다 들러서 돌봐 주세요. 돌볼 때마다 경험치가 쌓여 알 → 아기 → 어린이 → 어른으로 자라요. 3D 화면은 끌어서 돌리고, 휠이나 두 손가락, + − 버튼으로 확대해요. 다마고치를 누르면 쓰다듬어요.',
+        desc: '알을 받아 밥 주고 놀아 주고 씻겨 주며 키워요. 한 형님이 3마리까지 키울 수 있고, 3D 정원 섬에서 함께 돌아다녀요. 밤 상점에서 산 물건으로 정원을 꾸밀 수 있어요.',
+        help: '몇 시간마다 들러서 돌봐 주세요. 돌볼 때마다 경험치가 쌓여 알 → 아기 → 어린이 → 어른으로 자라요. 3D 화면은 끌어서 돌리고, 휠이나 두 손가락, + − 버튼으로 확대해요. 다마고치를 누르면 그 아이를 고르고 쓰다듬어요.',
         rankTitle: '형님들 다마고치',
-        reset: function(){ act = null; viewP = null; placing = null; selected = -1; },
+        reset: function(){ acts = {}; view = null; placing = null; selected = -1; adopting = false; },
         enter: function(){ uiT = 0; ensureWorld(); loadMine().catch(function(){}); loadList().catch(function(){}); renderPanels(); },
         hubInfo: function(tEl){
           var sb = window.__SV14_SB;
@@ -3601,7 +3705,7 @@ window.__SV14_BOOT = function(){
         update: function(dt){
           uiT -= dt;
           if (uiT <= 0) { uiT = 1; renderUi(); }
-          if (act) { act.t -= dt; if (act.t <= 0) act = null; }
+          Object.keys(acts).forEach(function(k){ acts[k].t -= dt; if (acts[k].t <= 0) delete acts[k]; });
           if (W) W.frame(dt);
         },
         draw: function(){}
