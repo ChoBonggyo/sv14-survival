@@ -993,6 +993,14 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
 .fr-visit{display:block;width:max-content;max-width:100%;margin:4px auto 8px;padding:8px 16px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;text-decoration:none}
 .fr-visit[hidden]{display:none}
 #fr-canvas:focus{outline:none}
+.fr-pad{display:none;align-items:center;justify-content:space-between;gap:12px;margin:10px auto 0;max-width:420px;user-select:none;-webkit-user-select:none}
+.fr-pad button{touch-action:none;-webkit-tap-highlight-color:transparent;font:inherit;font-weight:800;border-radius:12px;border:2px solid #3a4a2a;background:#fffbe9;color:#3a4a2a;padding:0}
+.fr-dir{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,48px);gap:6px}
+.fr-dir [data-k=u]{grid-column:2;grid-row:1}.fr-dir [data-k=l]{grid-column:1;grid-row:2}.fr-dir [data-k=d]{grid-column:2;grid-row:2}.fr-dir [data-k=r]{grid-column:3;grid-row:2}
+.fr-dir button{font-size:1.2rem}
+.fr-hit{width:110px;height:102px;font-size:1.05rem;background:#e2602a !important;color:#fff !important;border-color:#a8431c !important}
+.fr-pad button:active{transform:translateY(1px);filter:brightness(.92)}
+@media (pointer:coarse),(max-width:640px){.fr-pad{display:flex}}
 .fr-how{margin:12px 0 4px;padding-left:1.4em;display:grid;gap:4px;font-size:.92rem}
 /* ===== 그림 맞히기 ===== */
 .dr-page{padding-top:18px;padding-bottom:40px}
@@ -2184,6 +2192,10 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
       <div class="fr-wrap">
         <canvas id="fr-canvas" tabindex="0" aria-label="밤 줍기 섬 마을. 방향키로 움직이고 스페이스바로 두드려요."></canvas>
       </div>
+      <div class="fr-pad" id="fr-pad" aria-label="움직이기 단추">
+        <div class="fr-dir"><button type="button" data-k="u" aria-label="위로">▲</button><button type="button" data-k="l" aria-label="왼쪽으로">◀</button><button type="button" data-k="d" aria-label="아래로">▼</button><button type="button" data-k="r" aria-label="오른쪽으로">▶</button></div>
+        <button type="button" class="fr-hit" data-k="hit">🔨 때리기</button>
+      </div>
       <p class="fr-msg" id="fr-msg" role="status" aria-live="polite">밤나무 앞에서 스페이스바(휴대폰은 나무를 톡)를 눌러 보세요!</p>
       <a class="fr-visit" id="fr-visit" href="#games" hidden></a>
       <div class="fr-note" id="fr-login" hidden>지금은 연습이에요. <button type="button" id="fr-login-btn">로그인</button>하고 내 방을 고르면 주운 밤이 진짜 밤으로 들어가요.</div>
@@ -2297,7 +2309,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
     if (!GRID) grid();
     var s = Math.floor(fy / G) * GW + Math.floor(fx / G);
     var goal = -1, bd = 1e9, gx0 = Math.floor(tx / G), gy0 = Math.floor(ty / G);
-    for (var dy = -4; dy <= 4; dy++) for (var dx = -4; dx <= 4; dx++) {
+    for (var dy = -12; dy <= 12; dy++) for (var dx = -12; dx <= 12; dx++) {
       var gx = gx0 + dx, gy = gy0 + dy;
       if (gx < 0 || gy < 0 || gx >= GW || gy >= GH || !GRID[gy * GW + gx]) continue;
       var dd = dx * dx + dy * dy; if (dd < bd) { bd = dd; goal = gy * GW + gx; }
@@ -2619,7 +2631,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
       act(p);
       return;
     }
-    if (walkable(x, y)) walkTo(x, y);
+    walkTo(x, y);
   });
   function typing(){ var a = document.activeElement; return a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable); }
   var KEYMAP = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd', a: 'l', d: 'r', w: 'u', s: 'd', A: 'l', D: 'r', W: 'u', S: 'd' };
@@ -2631,6 +2643,20 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   });
   window.addEventListener('keyup', function(e){ if (KEYMAP[e.key]) keys[KEYMAP[e.key]] = false; });
   window.addEventListener('blur', function(){ keys = {}; });
+  // 휴대폰용 방향 단추 + 때리기 단추
+  (function(){
+    var pad = $('fr-pad');
+    if (!pad) return;
+    var bs = pad.querySelectorAll('[data-k]');
+    for (var i = 0; i < bs.length; i++) (function(b){
+      var k = b.getAttribute('data-k');
+      function on(e){ e.preventDefault(); if (k === 'hit') { swing(); return; } keys[k] = true; mini.path = []; try { b.setPointerCapture(e.pointerId); } catch (er) {} }
+      function off(){ if (k !== 'hit') keys[k] = false; }
+      b.addEventListener('pointerdown', on);
+      b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
+      b.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+    })(bs[i]);
+  })();
 
   // ---------- 움직임 ----------
   function update(dt){
