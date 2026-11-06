@@ -2250,18 +2250,18 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   var CEN = { x: 160 + DX - 10, y: 150 + DY - 8, w: 300, h: 230, center: true };
   ISL.push(CEN);
   function bridgeBetween(a, b){
-    if (a.y === b.y) { var l = a.x < b.x ? a : b, rr = a.x < b.x ? b : a; return { x: l.x + l.w - 2, y: l.y + l.h / 2 - 7, w: rr.x - (l.x + l.w) + 4, h: 12, hz: true }; }
+    if (a.y === b.y) { var l = a.x < b.x ? a : b, rr = a.x < b.x ? b : a; return { x: l.x + l.w - 2, y: l.y + l.h / 2 - 10, w: rr.x - (l.x + l.w) + 4, h: 18, hz: true }; }
     var t = a.y < b.y ? a : b, bt = a.y < b.y ? b : a;
-    return { x: t.x + t.w / 2 - 6, y: t.y + t.h - 2, w: 12, h: bt.y - (t.y + t.h) + 4, hz: false };
+    return { x: t.x + t.w / 2 - 9, y: t.y + t.h - 2, w: 18, h: bt.y - (t.y + t.h) + 4, hz: false };
   }
   for (var bi = 0; bi < 22; bi++) BRIDGES.push(bridgeBetween(ISL[bi], ISL[(bi + 1) % 22]));
   (function(){
     function idx(c, r){ for (var i = 0; i < RING.length; i++) if (RING[i][0] === c && RING[i][1] === r) return i; return -1; }
     var top = ISL[idx(3, 0)], bot = ISL[idx(3, 5)], lef = ISL[idx(0, 2)], rig = ISL[idx(6, 2)];
-    BRIDGES.push({ x: top.x + top.w / 2 - 6, y: top.y + top.h - 2, w: 12, h: CEN.y - (top.y + top.h) + 4, hz: false });
-    BRIDGES.push({ x: bot.x + bot.w / 2 - 6, y: CEN.y + CEN.h - 2, w: 12, h: bot.y - (CEN.y + CEN.h) + 4, hz: false });
-    BRIDGES.push({ x: lef.x + lef.w - 2, y: lef.y + lef.h / 2 - 7, w: CEN.x - (lef.x + lef.w) + 4, h: 12, hz: true });
-    BRIDGES.push({ x: CEN.x + CEN.w - 2, y: rig.y + rig.h / 2 - 7, w: rig.x - (CEN.x + CEN.w) + 4, h: 12, hz: true });
+    BRIDGES.push({ x: top.x + top.w / 2 - 9, y: top.y + top.h - 2, w: 18, h: CEN.y - (top.y + top.h) + 4, hz: false });
+    BRIDGES.push({ x: bot.x + bot.w / 2 - 9, y: CEN.y + CEN.h - 2, w: 18, h: bot.y - (CEN.y + CEN.h) + 4, hz: false });
+    BRIDGES.push({ x: lef.x + lef.w - 2, y: lef.y + lef.h / 2 - 10, w: CEN.x - (lef.x + lef.w) + 4, h: 18, hz: true });
+    BRIDGES.push({ x: CEN.x + CEN.w - 2, y: rig.y + rig.h / 2 - 10, w: rig.x - (CEN.x + CEN.w) + 4, h: 18, hz: true });
   })();
 
   // ---------- 밤나무 ----------
@@ -2272,6 +2272,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   TREES.forEach(resetTree);
   var BASKET = { x: 300 + DX, y: 340 + DY };
 
+  BRIDGES.forEach(function(b){ b.wk = b.hz ? { x: b.x - 6, y: b.y, w: b.w + 12, h: b.h } : { x: b.x, y: b.y - 6, w: b.w, h: b.h + 12 }; });
   function blocked(x, y){
     if (!TREES) return false;
     for (var i = 0; i < TREES.length; i++) { var t = TREES[i], w = t.big ? 7 : 5; if (Math.abs(x - t.x) < w && y > t.y - 4 && y < t.y + 2) return true; }
@@ -2282,7 +2283,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   function walkable(x, y){
     var i, s;
     for (i = 0; i < ISL.length; i++) { s = ISL[i]; if (x >= s.x + 3 && x <= s.x + s.w - 3 && y >= s.y + 4 && y <= s.y + s.h - 2) return !blocked(x, y); }
-    for (i = 0; i < BRIDGES.length; i++) { s = BRIDGES[i]; if (s.hz ? (x >= s.x && x <= s.x + s.w && y >= s.y + 3 && y <= s.y + s.h - 1) : (x >= s.x + 2 && x <= s.x + s.w - 2 && y >= s.y && y <= s.y + s.h)) return true; }
+    for (i = 0; i < BRIDGES.length; i++) { s = BRIDGES[i].wk; if (BRIDGES[i].hz ? (x >= s.x && x <= s.x + s.w && y >= s.y + 2 && y <= s.y + s.h) : (x >= s.x + 1 && x <= s.x + s.w - 1 && y >= s.y && y <= s.y + s.h)) return true; }
     return false;
   }
 
@@ -2328,7 +2329,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
 
   // ---------- 상태 ----------
   var me = null, today = 0, myNuts = null, practice = 0, busy = false, lastPick = 0;
-  var HOME = [300 + DX, 356 + DY];
+  var HOME = [282 + DX, 352 + DY];
   var mini = { x: HOME[0], y: HOME[1], path: [], dir: 1, fx: 0, fy: -1, step: 0, hit: 0 };
   var keys = {}, raf = 0, last = 0, active = false, tAll = 0, nearHouse = -1;
   var curLand = -1, mobs = [], hp = 5, HPMAX = 5, inv = 0, sayT = 0, sayIdx = 0, owners = [];
@@ -2656,7 +2657,9 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
     if (kx || ky) {
       var len = Math.sqrt(kx * kx + ky * ky), mx = kx / len * sp, my = ky / len * sp;
       if (walkable(mini.x + mx, mini.y)) { mini.x += mx; moved = true; }
+      else if (mx && !my) { for (var ny0 = 1; ny0 <= 10; ny0++) { if (walkable(mini.x + mx, mini.y - ny0)) { if (walkable(mini.x, mini.y - Math.min(sp, ny0))) { mini.y -= Math.min(sp, ny0); moved = true; } break; } if (walkable(mini.x + mx, mini.y + ny0)) { if (walkable(mini.x, mini.y + Math.min(sp, ny0))) { mini.y += Math.min(sp, ny0); moved = true; } break; } } }
       if (walkable(mini.x, mini.y + my)) { mini.y += my; moved = true; }
+      else if (my && !mx) { for (var nx0 = 1; nx0 <= 10; nx0++) { if (walkable(mini.x - nx0, mini.y + my)) { if (walkable(mini.x - Math.min(sp, nx0), mini.y)) { mini.x -= Math.min(sp, nx0); moved = true; } break; } if (walkable(mini.x + nx0, mini.y + my)) { if (walkable(mini.x + Math.min(sp, nx0), mini.y)) { mini.x += Math.min(sp, nx0); moved = true; } break; } } }
       mini.fx = kx; mini.fy = ky;
       if (kx) mini.dir = kx;
     } else if (mini.path.length) {
