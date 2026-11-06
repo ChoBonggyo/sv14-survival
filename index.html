@@ -2230,7 +2230,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   }
 
   // ---------- 세계: 7x6 칸의 네모 고리(22칸) + 가운데 밤섬 ----------
-  var CELL = 80, OFF = 20, WW = OFF * 2 + CELL * 7, WH = OFF * 2 + CELL * 6, CL = 9;
+  var CELL = 140, OFF = 30, WW = OFF * 2 + CELL * 7, WH = OFF * 2 + CELL * 6, CL = 9;
   var RING = [];
   (function(){
     var c, r;
@@ -2243,10 +2243,11 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   var ISL = [], BRIDGES = [], HOUSES = [];
   RING.forEach(function(q, i){
     var p = cellC(q[0], q[1]);
-    ISL.push({ x: p[0] - 28, y: p[1] - 24, w: 56, h: 44, ring: i });
-    HOUSES.push({ i: i, x: p[0] - 16, y: p[1] - 2, cx: p[0], cy: p[1] });
+    ISL.push({ x: p[0] - 56, y: p[1] - 48, w: 112, h: 92, ring: i });
+    HOUSES.push({ i: i, x: p[0] - 30, y: p[1] - 14, cx: p[0], cy: p[1] });
   });
-  var CEN = { x: 160, y: 150, w: 280, h: 214, center: true };
+  var DX = 220, DY = 193;
+  var CEN = { x: 160 + DX - 10, y: 150 + DY - 8, w: 300, h: 230, center: true };
   ISL.push(CEN);
   function bridgeBetween(a, b){
     if (a.y === b.y) { var l = a.x < b.x ? a : b, rr = a.x < b.x ? b : a; return { x: l.x + l.w - 2, y: l.y + l.h / 2 - 7, w: rr.x - (l.x + l.w) + 4, h: 12, hz: true }; }
@@ -2265,13 +2266,14 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
 
   // ---------- 밤나무 ----------
   var TREES = [[206, 196], [262, 182], [338, 182], [394, 198], [214, 290], [386, 292], [300, 246]].map(function(p, i){
-    return { x: p[0], y: p[1], hp: 0, burrs: 3, shake: 0, rest: 0, big: i === 6 };
+    return { x: p[0] + DX, y: p[1] + DY, hp: 0, burrs: 3, shake: 0, rest: 0, big: i === 6 };
   });
   function resetTree(t){ t.hp = 6 + Math.floor(Math.random() * 5); }
   TREES.forEach(resetTree);
-  var BASKET = { x: 300, y: 340 };
+  var BASKET = { x: 300 + DX, y: 340 + DY };
 
   function blocked(x, y){
+    if (!TREES) return false;
     for (var i = 0; i < TREES.length; i++) { var t = TREES[i], w = t.big ? 7 : 5; if (Math.abs(x - t.x) < w && y > t.y - 4 && y < t.y + 2) return true; }
     for (var j = 0; j < HOUSES.length; j++) { var h = HOUSES[j]; if (x > h.x - 3 && x < h.x + 26 && y > h.y - 6 && y < h.y + 1) return true; }
     if (Math.abs(x - BASKET.x) < 9 && y > BASKET.y - 4 && y < BASKET.y + 2) return true;
@@ -2326,8 +2328,157 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
 
   // ---------- 상태 ----------
   var me = null, today = 0, myNuts = null, practice = 0, busy = false, lastPick = 0;
-  var mini = { x: 300, y: 354, path: [], dir: 1, fx: 0, fy: -1, step: 0, hit: 0 };
+  var HOME = [300 + DX, 356 + DY];
+  var mini = { x: HOME[0], y: HOME[1], path: [], dir: 1, fx: 0, fy: -1, step: 0, hit: 0 };
   var keys = {}, raf = 0, last = 0, active = false, tAll = 0, nearHouse = -1;
+  var curLand = -1, mobs = [], hp = 5, HPMAX = 5, inv = 0, sayT = 0, sayIdx = 0, owners = [];
+  // 집주인: 자기 땅에서 서성이는 미니미
+  for (var oi = 0; oi < 22; oi++) owners.push({ x: 0, y: 0, tx: 0, ty: 0, dir: -1, step: 0, wait: 0, said: '' });
+  function myLand(){ var ms = members(); for (var i = 0; i < ms.length && i < 22; i++) if (me && me.slug && ms[i].slug === me.slug) return i; return -1; }
+  function landOf(x, y){ for (var i = 0; i < 22; i++) { var s = ISL[i]; if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) return i; } return -1; }
+  function myName(){ var ms = members(); for (var i = 0; i < ms.length; i++) if (me && me.slug && ms[i].slug === me.slug) return ms[i].name; return '손님'; }
+  var LINES = [
+    function(n){ return n + ' 나가세요~ 여기는 내 땅이에요!'; },
+    function(){ return '졸병들아! 저 사람 쫓아내!'; },
+    function(){ return '허락 없이 들어오면 안 돼요~'; },
+    function(){ return '내 밤은 한 톨도 못 줘요!'; },
+    function(n){ return n + ', 빨리 나가요! 진짜예요!'; }
+  ];
+  var LOSE = ['으악, 내 졸병들이...!', '다음엔 안 봐줘요!', '흥, 오늘만 봐줄게요.'];
+  function say(i, s2){ owners[i].said = s2; owners[i].sayT = 3.2; }
+  function spawnMobs(i){
+    mobs = [];
+    var s = ISL[i], n = 3 + (i % 3);
+    for (var k = 0; k < n; k++) {
+      for (var tries = 0; tries < 30; tries++) {
+        var x = s.x + 10 + Math.random() * (s.w - 20), y = s.y + 40 + Math.random() * (s.h - 46);
+        if (walkable(x, y) && Math.hypot(x - mini.x, y - mini.y) > 30) { mobs.push({ x: x, y: y, hp: 2, hurt: 0, kb: [0, 0], land: i, step: Math.random(), cd: 0.6 + Math.random() }); break; }
+      }
+    }
+  }
+  function enterLand(i){
+    curLand = i;
+    mobs = [];
+    if (i < 0) return;
+    var m = members()[i];
+    if (!m) return;
+    if (i === myLand()) { say(i, '어서 와요! 여긴 우리 집이에요 😊'); setMsg('내 땅이에요. 여긴 졸병이 없어서 안전해요!'); return; }
+    spawnMobs(i);
+    sayIdx = 0; sayT = 0;
+    say(i, LINES[0](myName()));
+    setMsg('⚠️ ' + m.name + ' 땅에 들어왔어요! 졸병들이 공격해요. 스페이스바(휴대폰은 졸병을 톡)로 물리치세요!');
+  }
+  function hurtMe(fromX, fromY){
+    if (inv > 0) return;
+    hp--; inv = 1.2;
+    pops.push({ x: mini.x, y: mini.y - 22, s: '아야!', c: '#c0392b', life: 0.8 });
+    var dx = mini.x - fromX, dy = mini.y - fromY, d = Math.hypot(dx, dy) || 1;
+    for (var k = 0; k < 6; k++) { var nx = mini.x + dx / d * 2, ny = mini.y + dy / d * 2; if (walkable(nx, ny)) { mini.x = nx; mini.y = ny; } }
+    mini.path = [];
+    if (hp <= 0) {
+      var m = members()[curLand];
+      setMsg('💫 졸병들한테 쫓겨났어요! 밤섬에서 다시 시작해요.' + (m ? ' (' + m.name + ': "거봐요, 내 땅이라니까요~")' : ''));
+      mini.x = HOME[0]; mini.y = HOME[1]; hp = HPMAX; inv = 1.5; mobs = []; curLand = -1;
+    }
+  }
+  function hitMobs(x, y, rad){
+    var any = false;
+    mobs.forEach(function(o){
+      if (o.hp <= 0) return;
+      if (Math.hypot(o.x - x, (o.y - 4) - y) < rad) {
+        any = true; o.hp--; o.hurt = 0.3;
+        var dx = o.x - mini.x, dy = o.y - mini.y, d = Math.hypot(dx, dy) || 1; o.kb = [dx / d * 90, dy / d * 90];
+        pops.push({ x: o.x, y: o.y - 14, s: o.hp > 0 ? '퍽!' : '뿅~', c: '#c0392b', life: 0.6 });
+        if (o.hp <= 0) for (var k = 0; k < 8; k++) parts.push({ x: o.x, y: o.y - 5, vx: (Math.random() - 0.5) * 60, vy: -20 - Math.random() * 30, life: 0.7, c: k % 2 ? '#ffffff' : '#c9c9c9' });
+      }
+    });
+    if (any) {
+      mobs = mobs.filter(function(o){ return o.hp > 0; });
+      if (!mobs.length && curLand >= 0) { say(curLand, LOSE[Math.floor(Math.random() * LOSE.length)]); setMsg('졸병을 다 물리쳤어요! 💪 이제 이 땅을 마음껏 구경해요.'); }
+    }
+    return any;
+  }
+  function updateLand(dt){
+    if (inv > 0) inv -= dt;
+    var li = landOf(mini.x, mini.y);
+    if (li !== curLand) enterLand(li);
+    if (li < 0 && hp < HPMAX) { hp = Math.min(HPMAX, hp + dt * 0.5); }
+    // 집주인 서성이기
+    for (var i = 0; i < 22; i++) {
+      var o = owners[i], s = ISL[i], h = HOUSES[i];
+      if (!o.x) { o.x = h.x + 44; o.y = h.y + 14; o.tx = o.x; o.ty = o.y; }
+      if (o.sayT > 0) o.sayT -= dt;
+      if (i === curLand && i !== myLand()) {
+        // 침입자를 바라보며 따라옴(조금 떨어져서)
+        o.tx = Math.max(s.x + 10, Math.min(s.x + s.w - 10, mini.x + (mini.x < o.x ? 26 : -26)));
+        o.ty = Math.max(s.y + 20, Math.min(s.y + s.h - 6, mini.y));
+        o.dir = mini.x < o.x ? -1 : 1;
+        sayT -= dt;
+        if (sayT <= 0) { sayT = 3.6; sayIdx = (sayIdx + 1) % LINES.length; if (mobs.length) say(i, LINES[sayIdx](myName())); }
+      } else {
+        o.wait -= dt;
+        if (o.wait <= 0) { o.wait = 2 + Math.random() * 4; var nx = s.x + 14 + Math.random() * (s.w - 28), ny = s.y + 40 + Math.random() * (s.h - 46); if (walkable(nx, ny)) { o.tx = nx; o.ty = ny; } }
+      }
+      var dx = o.tx - o.x, dy = o.ty - o.y, d = Math.hypot(dx, dy);
+      if (d > 1) { var sp = 26 * dt, nx2 = o.x + dx / d * Math.min(sp, d), ny2 = o.y + dy / d * Math.min(sp, d); if (walkable(nx2, ny2)) { o.x = nx2; o.y = ny2; } else { o.tx = o.x; o.ty = o.y; } o.step += dt; if (i !== curLand) o.dir = dx > 0 ? 1 : -1; }
+    }
+    // 졸병
+    mobs.forEach(function(o){
+      var s = ISL[o.land];
+      if (o.hurt > 0) o.hurt -= dt;
+      if (o.kb[0] || o.kb[1]) {
+        var kx = o.x + o.kb[0] * dt, ky = o.y + o.kb[1] * dt;
+        if (walkable(kx, ky)) { o.x = kx; o.y = ky; }
+        o.kb[0] *= 0.82; o.kb[1] *= 0.82; if (Math.abs(o.kb[0]) + Math.abs(o.kb[1]) < 3) o.kb = [0, 0];
+        return;
+      }
+      var dx = mini.x - o.x, dy = mini.y - o.y, d = Math.hypot(dx, dy);
+      var inLand = curLand === o.land;
+      if (inLand && d > 6) {
+        var sp = (22 + (o.land % 4) * 3) * dt, wob = Math.sin(tAll * 5 + o.step * 9) * 0.6;
+        var nx = o.x + (dx / d + wob * dy / d * 0.3) * sp, ny = o.y + (dy / d - wob * dx / d * 0.3) * sp;
+        function okm(ax, ay){ return walkable(ax, ay) && ax > s.x + 4 && ax < s.x + s.w - 4 && ay > s.y + 6 && ay < s.y + s.h - 2; }
+        if (okm(nx, ny)) { o.x = nx; o.y = ny; } else if (okm(nx, o.y)) o.x = nx; else if (okm(o.x, ny)) o.y = ny;
+        o.step += dt;
+      }
+      o.cd -= dt;
+      if (inLand && d < 9 && o.cd <= 0) { o.cd = 0.9; hurtMe(o.x, o.y); }
+    });
+  }
+  function mobSprite(o){
+    var m = members()[o.land], M = window.__SV14_MINI;
+    var col = M && m ? M.top(m.room) : '#c0392b';
+    var cn = parseInt(col.slice(1), 16), lum = ((cn >> 16) * 0.3 + ((cn >> 8) & 255) * 0.59 + (cn & 255) * 0.11);
+    if (isNaN(cn) || lum > 190 || lum < 45) col = ['#c0392b', '#7d4cc2', '#2f7de1', '#d9771e'][o.land % 4];
+    var x = Math.round(o.x), y = Math.round(o.y), b = reduced ? 0 : Math.round(Math.abs(Math.sin((tAll + o.step) * 8)) * 1.5);
+    var flash = o.hurt > 0 && Math.floor(o.hurt * 20) % 2;
+    R(x - 5, y, 11, 2, 'rgba(0,0,0,.18)');
+    var body = flash ? '#ffffff' : col, dark = flash ? '#dddddd' : shade(col, -55);
+    R(x - 5, y - 9 - b, 11, 9, body); R(x - 4, y - 10 - b, 9, 1, body); R(x + 3, y - 9 - b, 2, 9, dark);
+    R(x - 5, y - 13 - b, 11, 4, '#8a949c'); R(x - 4, y - 14 - b, 9, 1, '#a9b3ba'); R(x - 6, y - 10 - b, 13, 1, '#6a737a'); R(x, y - 16 - b, 1, 2, '#e2602a');
+    R(x - 3, y - 8 - b, 2, 2, '#ffffff'); R(x + 1, y - 8 - b, 2, 2, '#ffffff'); R(x - 2, y - 7 - b, 1, 1, '#1d1b1b'); R(x + 2, y - 7 - b, 1, 1, '#1d1b1b');
+    R(x - 3, y - 9 - b, 2, 1, '#1d1b1b'); R(x + 1, y - 9 - b, 2, 1, '#1d1b1b');
+    R(x - 1, y - 4 - b, 3, 1, '#5a1f1f');
+    var sd = mini.x > o.x ? 1 : -1;
+    R(x + sd * 7, y - 15 - b, 1, 13, '#8a5a35'); R(x + sd * 7 - 1, y - 17 - b, 3, 2, '#c9ced2');
+    R(x - 4, y - b, 3, 1, dark); R(x + 2, y - b, 3, 1, dark);
+  }
+  function ownerSprite(i){
+    var o = owners[i], m = members()[i], M = window.__SV14_MINI;
+    if (!m || !M || !o.x || !vis(o.x - 20, o.y - 40, 40, 44)) return;
+    M.draw(R, Math.round(o.x - 8), Math.round(o.y), m.room, { flip: o.dir < 0, stride: Math.hypot(o.tx - o.x, o.ty - o.y) > 1 && Math.floor(o.step * 8) % 2 === 1 });
+    if (i === curLand) txt('👑', o.x, o.y - 30, '#000', 6);
+  }
+  function bubble(i){
+    var o = owners[i];
+    if (!o.said || !(o.sayT > 0) || !vis(o.x - 80, o.y - 60, 160, 60)) return;
+    cx.font = 'bold ' + 5.6 * K + 'px sans-serif';
+    var w = cx.measureText(o.said).width / K + 8, h = 11, bx = Math.max(camX + 2, Math.min(camX + VW - w - 2, o.x - w / 2)), by = o.y - 44;
+    cx.globalAlpha = Math.min(1, o.sayT * 3);
+    R(bx, by, w, h, '#ffffff'); R(bx, by + h, w, 1, '#c9bfa5'); R(o.x - 1, by + h, 3, 2, '#ffffff'); R(o.x, by + h + 2, 1, 1, '#ffffff');
+    txt(o.said, bx + w / 2, by + h / 2, '#3a2a1e', 5.6);
+    cx.globalAlpha = 1;
+  }
 
   function kstDay(){ return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
   function members(){ return window.__SV14_MEMBERS || []; }
@@ -2436,6 +2587,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   // 스페이스바: 바라보는 쪽 가까운 것을 때림
   function swing(){
     var hx = mini.x + mini.fx * 8, hy = mini.y - 2 + mini.fy * 6;
+    if (mobs.length && (hitMobs(hx, hy - 3, 15) || hitMobs(mini.x, mini.y - 5, 13))) { swingAnim(); return; }
     var p = pick(hx, hy, true) || pick(mini.x, mini.y - 2, true);
     if (p && p.k !== 'house') { if (p.o.x != null && Math.abs(p.o.x - mini.x) > 2) mini.dir = p.o.x > mini.x ? 1 : -1; act(p); }
     else if (p) { swingAnim(); act(p); }
@@ -2444,8 +2596,17 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   cv.addEventListener('pointerdown', function(e){
     var b = cv.getBoundingClientRect();
     var x = (e.clientX - b.left) / b.width * VW + camX, y = (e.clientY - b.top) / b.height * VH + camY;
-    var p = pick(x, y, false);
     e.preventDefault();
+    for (var mi = 0; mi < mobs.length; mi++) {
+      var mo = mobs[mi];
+      if (Math.abs(x - mo.x) < 12 && Math.abs(y - (mo.y - 7)) < 13) {
+        mini.dir = mo.x > mini.x ? 1 : -1;
+        if (Math.hypot(mo.x - mini.x, mo.y - mini.y) < 30) { swingAnim(); hitMobs(mo.x, mo.y - 4, 8); mini.path = []; }
+        else walkTo(mo.x, mo.y);
+        return;
+      }
+    }
+    var p = pick(x, y, false);
     try { cv.focus({ preventScroll: true }); } catch (er) {}
     if (p) {
       var tx, ty;
@@ -2506,6 +2667,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
       moved = true;
     }
     if (moved) mini.step += dt;
+    updateLand(dt);
     var nh = -1;
     HOUSES.forEach(function(h, i){ if (Math.abs(mini.x - (h.x + 12)) < 24 && mini.y > h.y - 2 && mini.y < h.y + 16) nh = i; });
     if (nh !== nearHouse) {
@@ -2549,6 +2711,21 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
       R(b.x, b.y, 1, b.h, '#8a5428'); R(b.x + b.w - 1, b.y, 1, b.h, '#8a5428');
     }
   }
+  function landDeco(h){
+    var s = ISL[h.i], seed = h.i * 7 + 3;
+    if (!vis(s.x, s.y, s.w, s.h)) return;
+    function rnd(k){ var v = Math.sin(seed * 99.1 + k * 37.7) * 43758.5; return v - Math.floor(v); }
+    for (var k = 0; k < 5; k++) {
+      var fx = s.x + 8 + rnd(k) * (s.w - 16), fy = s.y + 50 + rnd(k + 9) * (s.h - 58);
+      var c = ['#ff8fb0', '#f5d000', '#ffffff', '#c9a0ff'][Math.floor(rnd(k + 20) * 4)];
+      R(fx, fy + 2, 1, 3, '#3f8f3c'); R(fx - 1, fy, 3, 3, c); R(fx, fy + 1, 1, 1, '#f2a33a');
+    }
+    var bx = s.x + 8 + Math.floor(rnd(31) * 2) * (s.w - 30), by = s.y + 12;
+    R(bx, by + 6, 16, 2, 'rgba(0,0,0,.14)'); R(bx, by, 16, 7, '#3f8f3c'); R(bx + 2, by - 2, 12, 3, '#5cb04a'); R(bx + 4, by - 1, 4, 1, '#8fd36a');
+    // 울타리(집 옆)
+    for (var q = 0; q < 4; q++) { R(h.x + 36 + q * 6, h.y - 8, 2, 8, '#e8d9b8'); }
+    R(h.x + 36, h.y - 6, 20, 1, '#cbb995'); R(h.x + 36, h.y - 3, 20, 1, '#cbb995');
+  }
   function house(h){
     if (!vis(h.x - 20, h.y - 40, 76, 64)) return;
     var m = members()[h.i], M = window.__SV14_MINI;
@@ -2563,8 +2740,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
     R(x - 2, y - 19, 24, 4, roof); R(x, y - 22, 20, 3, roof); R(x + 3, y - 25, 14, 3, roof); R(x + 6, y - 27, 8, 2, roof);
     R(x + 22, y - 19, 5, 4, shade(roof, -50)); R(x + 20, y - 22, 5, 3, shade(roof, -50)); R(x + 17, y - 25, 5, 3, shade(roof, -50));
     R(x - 2, y - 16, 24, 1, shade(roof, -40)); R(x + 4, y - 24, 6, 1, shade(roof, 40));
-    if (M && room) M.draw(R, x + 28, y + 6, room, { flip: true, stride: false });
-    if (m) txt(m.name, h.cx, h.cy + 15, '#fffbe9', 5.2, 'rgba(58,74,42,.82)');
+    if (m) txt(m.name, x + 11, y + 7, '#fffbe9', 5.2, 'rgba(58,74,42,.82)');
     if (nearHouse === h.i) txt('▼', x + 10, y - 33 + (reduced ? 0 : Math.round(Math.sin(tAll * 6))), '#e2602a', 6);
   }
   function burrSprite(x, y, open, wob){
@@ -2608,14 +2784,16 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   }
   function center(){
     var b = BASKET;
-    R(300, 168, 1, 12, '#6f4426'); R(284, 158, 34, 11, '#e0b072'); R(284, 158, 34, 1, '#8a5428'); R(284, 168, 34, 1, '#b5733a');
-    txt('밤섬', 301, 163.5, '#5a3618', 5.5);
+    var sx0 = 300 + DX, sy0 = 160 + DY;
+    R(sx0, sy0 + 8, 1, 12, '#6f4426'); R(sx0 - 16, sy0 - 2, 34, 11, '#e0b072'); R(sx0 - 16, sy0 - 2, 34, 1, '#8a5428'); R(sx0 - 16, sy0 + 8, 34, 1, '#b5733a');
+    txt('밤섬', sx0 + 1, sy0 + 3.5, '#5a3618', 5.5);
     R(b.x - 10, b.y + 1, 22, 3, 'rgba(0,0,0,.16)');
     R(b.x - 8, b.y - 8, 18, 9, '#c98a4a'); R(b.x + 7, b.y - 8, 3, 9, '#a86a32'); R(b.x - 8, b.y - 8, 18, 1, '#8a5428');
     for (var k = 0; k < 4; k++) R(b.x - 7 + k * 4, b.y - 7, 1, 8, '#a86a32');
     R(b.x - 6, b.y - 15, 1, 7, '#8a5428'); R(b.x + 7, b.y - 15, 1, 7, '#8a5428'); R(b.x - 6, b.y - 16, 14, 1, '#8a5428');
     for (var n = 0; n < Math.min(basketN, 8); n++) { var nx = b.x - 6 + (n % 4) * 4, ny = b.y - 8 - Math.floor(n / 4) * 2; R(nx, ny - 2, 3, 3, '#7a4524'); R(nx, ny - 2, 1, 1, '#a86a3a'); }
-    [[176, 172, '#ff8fb0'], [430, 170, '#f5d000'], [178, 352, '#ffffff'], [424, 350, '#ff8fb0'], [250, 352, '#f5d000'], [354, 352, '#ffffff'], [300, 205, '#ff8fb0']].forEach(function(f){
+    [[176, 172, '#ff8fb0'], [430, 170, '#f5d000'], [178, 352, '#ffffff'], [424, 350, '#ff8fb0'], [250, 352, '#f5d000'], [354, 352, '#ffffff'], [300, 205, '#ff8fb0']].forEach(function(f0){
+      var f = [f0[0] + DX, f0[1] + DY, f0[2]];
       if (!vis(f[0] - 2, f[1] - 2, 5, 6)) return;
       R(f[0], f[1] + 2, 1, 3, '#3f8f3c'); R(f[0] - 1, f[1], 3, 3, f[2]); R(f[0], f[1] + 1, 1, 1, '#f2a33a');
     });
@@ -2630,7 +2808,10 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
     ISL.forEach(island);
     BRIDGES.forEach(bridge);
     center();
+    HOUSES.forEach(landDeco);
     var list = [];
+    for (var oi2 = 0; oi2 < 22; oi2++) (function(i){ list.push({ y: owners[i].y, f: function(){ ownerSprite(i); } }); })(oi2);
+    mobs.forEach(function(o){ list.push({ y: o.y, f: function(){ mobSprite(o); } }); });
     TREES.forEach(function(t){ list.push({ y: t.y, f: function(){ tree(t); } }); });
     HOUSES.forEach(function(h){ list.push({ y: h.y, f: function(){ house(h); } }); });
     burrs.forEach(function(b){ list.push({ y: b.y, f: function(){ burrSprite(b.x, b.y, b.hits >= 3, b.wob); } }); });
@@ -2639,6 +2820,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
       if (!reduced && n.vy === 0) { var a = 0.5 + 0.5 * Math.sin((tAll - n.born) * 6); R(n.x - 1, n.y - 13 - a * 2, 3, 3, 'rgba(255,240,150,' + (0.5 + a * 0.5) + ')'); }
     } }); });
     list.push({ y: mini.y + 0.5, f: function(){
+      if (inv > 0 && Math.floor(inv * 12) % 2) return;
       var M = window.__SV14_MINI, lk = M ? M.look(me && me.slug) : null;
       var up = mini.hit > 0.11, lift = up ? -2 : 0;
       if (M && lk) M.draw(R, Math.round(mini.x - 8), Math.round(mini.y) + lift, lk, { flip: mini.dir < 0, stride: (mini.path.length > 0 || keys.l || keys.r || keys.u || keys.d) && Math.floor(mini.step * 8) % 2 === 1 });
@@ -2657,12 +2839,22 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
       nutSprite(x, y, false);
     });
     pops.forEach(function(p){ cx.globalAlpha = Math.max(0, Math.min(1, p.life * 2)); txt(p.s, p.x, p.y, p.c, 6.5); cx.globalAlpha = 1; });
+    for (var bi2 = 0; bi2 < 22; bi2++) bubble(bi2);
+    if (curLand >= 0 && curLand !== myLand() || hp < HPMAX) {
+      for (var hk = 0; hk < HPMAX; hk++) {
+        var full = hp >= hk + 1, half = !full && hp > hk + 0.4, hx2 = 5 + hk * 9, hy2 = 5;
+        var c1 = full ? '#e23d3d' : half ? '#f08a8a' : 'rgba(255,255,255,.55)';
+        RS(hx2, hy2 + 1, 2, 3, c1); RS(hx2 + 4, hy2 + 1, 2, 3, c1); RS(hx2 + 1, hy2, 2, 5, c1); RS(hx2 + 3, hy2, 2, 5, c1); RS(hx2 + 2, hy2 + 5, 2, 1, c1); RS(hx2 + 1, hy2 + 4, 4, 1, c1);
+      }
+      if (curLand >= 0 && mobs.length) { cx.font = 'bold ' + 5 * K + 'px sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'middle'; cx.fillStyle = '#fff'; cx.strokeStyle = 'rgba(0,0,0,.5)'; cx.lineWidth = 1.5 * K; cx.strokeText('졸병 ' + mobs.length, 5 * K, 17 * K); cx.fillText('졸병 ' + mobs.length, 5 * K, 17 * K); }
+    }
     // 작은 지도 (오른쪽 위)
     var mw = 46, mh = 46 * WH / WW, mx = VW - mw - 4, my = 4, sc = mw / WW;
     RS(mx - 1, my - 1, mw + 2, mh + 2, 'rgba(255,255,255,.85)'); RS(mx, my, mw, mh, '#4fa3e0');
     ISL.forEach(function(s){ RS(mx + s.x * sc, my + s.y * sc, s.w * sc, s.h * sc, '#7cc45a'); });
     var vx = mx + camX * sc, vy = my + camY * sc, vw = VW * sc, vh = VH * sc;
     RS(vx, vy, vw, 0.3, '#fff'); RS(vx, vy + vh, vw, 0.3, '#fff'); RS(vx, vy, 0.3, vh, '#fff'); RS(vx + vw, vy, 0.3, vh, '#fff');
+    if (curLand >= 0) { var cl = ISL[curLand]; RS(mx + cl.x * sc, my + cl.y * sc, cl.w * sc, cl.h * sc, mobs.length && curLand !== myLand() ? 'rgba(226,61,61,.6)' : 'rgba(255,255,255,.6)'); }
     RS(mx + mini.x * sc - 1, my + mini.y * sc - 1, 2, 2, '#e2602a');
   }
   function fit(){
