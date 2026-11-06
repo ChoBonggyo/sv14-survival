@@ -980,6 +980,17 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   .gj-bob,.gj-leaf,.gj-chew,.gj-paper,.gj-stage[data-face] .gj-lid,.gj-stage[data-face] .gj-bob{animation:none!important}
 }
 
+/* ===== 밤 줍기 ===== */
+.fr-bar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-bottom:10px;padding:10px 14px;border-radius:12px;background:var(--hero-bg);color:var(--hero-fg);font-weight:600}
+.fr-bar b{font-size:1.05rem;color:#ffd77a;margin-left:4px}
+.fr-wrap{border:3px solid var(--hp-line);border-radius:12px;overflow:hidden;background:#4fa3e0;max-width:760px;margin:0 auto}
+#fr-canvas{display:block;width:100%;height:auto;image-rendering:pixelated;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+.fr-msg{margin:10px 0 6px;min-height:1.6em;font-weight:700;text-align:center}
+.fr-note{margin:6px 0;padding:8px 12px;border-radius:10px;background:#fff6e0;border:1px solid #ecd9a8;font-size:.9rem;text-align:center}
+.fr-note[hidden]{display:none}
+.fr-note.done{background:#eef7e6;border-color:#cfe6bd}
+.fr-note button{font:inherit;font-weight:700;padding:2px 10px;margin:0 2px}
+.fr-how{margin:12px 0 4px;padding-left:1.4em;display:grid;gap:4px;font-size:.92rem}
 /* ===== 그림 맞히기 ===== */
 .dr-page{padding-top:18px;padding-bottom:40px}
 .dr-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
@@ -2155,6 +2166,390 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
 </script>
 </div>
 
+<div id="view-forest" hidden>
+  <div class="wrap dr-page">
+    <div class="room-top"><a href="#games">← 미니게임 목록으로</a></div>
+    <div class="dr-card">
+      <div class="dr-headline">
+        <h2>🌰 밤 줍기</h2>
+        <p>밤나무를 톡톡 두드려 밤송이를 떨어뜨리고, 밤송이를 콕콕 까서 밤을 주워요. 주운 밤은 진짜 내 밤으로 들어가요!</p>
+      </div>
+      <div class="fr-bar">
+        <span>오늘 주운 밤 <b id="fr-today">-</b></span>
+        <span>내 밤 <b id="fr-nuts">-</b></span>
+      </div>
+      <div class="fr-wrap">
+        <canvas id="fr-canvas" aria-label="밤 줍기 섬 마을. 밤나무를 눌러 두드려요."></canvas>
+      </div>
+      <p class="fr-msg" id="fr-msg" role="status" aria-live="polite">밤나무를 여러 번 눌러 보세요!</p>
+      <div class="fr-note" id="fr-login" hidden>지금은 연습이에요. <button type="button" id="fr-login-btn">로그인</button>하고 내 방을 고르면 주운 밤이 진짜 밤으로 들어가요.</div>
+      <div class="fr-note done" id="fr-done" hidden>오늘 몫(5개)을 다 주웠어요! 밤나무는 내일 다시 열려요. 🌙</div>
+      <ol class="fr-how">
+        <li><b>밤나무 두드리기</b> · 나무를 여러 번 누르면(클릭) 밤송이가 떨어져요.</li>
+        <li><b>밤송이 까기</b> · 떨어진 밤송이를 3번 누르면 쩍 벌어져요.</li>
+        <li><b>밤 줍기</b> · 반짝이는 밤을 누르면 바구니로 쏙! 내 밤 +1</li>
+      </ol>
+      <p class="dr-note">한 형님이 하루에 5개까지 주울 수 있어요(밤 날짜는 한국 시간 자정에 바뀌어요). 열매를 다 떨군 나무는 잠깐 쉬었다가 다시 열려요.</p>
+    </div>
+  </div>
+<script>
+// ===== 밤 줍기: 도트 섬 마을의 밤나무를 두드려 밤송이를 떨어뜨리고, 까서 진짜 밤을 주움 (하루 5개, 서버 함수 dig_nut) =====
+(function(){
+  var view = document.getElementById('view-forest');
+  if (!view) return;
+  function $(id){ return document.getElementById(id); }
+  var cv = $('fr-canvas'), cx = cv.getContext('2d');
+  var W = 256, H = 208, K = 4;
+  cv.width = W * K; cv.height = H * K;
+  var DAY_MAX = 5;
+  var reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  function R(x, y, w, h, c){ cx.fillStyle = c; cx.fillRect(Math.round(x) * K, Math.round(y) * K, Math.round(w) * K, Math.round(h) * K); }
+  function txt(s, x, y, c, size){
+    cx.font = 'bold ' + (size || 7) * K + 'px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+    cx.lineWidth = 2.2 * K; cx.strokeStyle = 'rgba(255,255,255,.9)'; cx.strokeText(s, x * K, y * K);
+    cx.fillStyle = c; cx.fillText(s, x * K, y * K);
+  }
+
+  // ---------- 섬과 다리 ----------
+  var ISL = [
+    { id: 'home', x: 8, y: 98, w: 78, h: 92 },
+    { id: 'wood', x: 100, y: 10, w: 148, h: 116 },
+    { id: 'pond', x: 150, y: 142, w: 98, h: 52 }
+  ];
+  var BRIDGE = [
+    { a: 'home', b: 'wood', x: 84, y: 104, w: 18, h: 11, hz: true, p: [93, 112] },
+    { a: 'wood', b: 'pond', x: 190, y: 124, w: 12, h: 20, hz: false, p: [196, 134] }
+  ];
+  function islandOf(x, y){
+    for (var i = 0; i < ISL.length; i++) { var s = ISL[i]; if (x >= s.x - 2 && x <= s.x + s.w + 2 && y >= s.y - 2 && y <= s.y + s.h + 2) return s.id; }
+    return null;
+  }
+  function route(fx, fy, tx, ty){
+    var a = islandOf(fx, fy), b = islandOf(tx, ty), pts = [];
+    if (a && b && a !== b) {
+      if ((a === 'home' && b === 'pond') || (a === 'pond' && b === 'home')) {
+        var b1 = a === 'home' ? BRIDGE[0] : BRIDGE[1], b2 = a === 'home' ? BRIDGE[1] : BRIDGE[0];
+        pts.push(b1.p, b2.p);
+      } else {
+        BRIDGE.forEach(function(br){ if ((br.a === a && br.b === b) || (br.a === b && br.b === a)) pts.push(br.p); });
+      }
+    }
+    pts.push([tx, ty]);
+    return pts;
+  }
+
+  // ---------- 밤나무 ----------
+  var TREES = [[128, 48], [176, 40], [224, 50], [146, 100], [208, 104]].map(function(p){
+    return { x: p[0], y: p[1], hp: 0, burrs: 3, shake: 0, rest: 0 };
+  });
+  function resetTree(t){ t.hp = 6 + Math.floor(Math.random() * 5); }
+  TREES.forEach(resetTree);
+  var burrs = [], nuts = [], parts = [], pops = [], flies = [];
+  var basketN = 0;
+
+  // ---------- 상태 ----------
+  var me = null, today = 0, myNuts = null, practice = 0, busy = false, lastPick = 0, loaded = false, msgT = 0;
+  var mini = { x: 46, y: 160, path: [], dir: 1, step: 0, hit: 0 };
+  var raf = 0, last = 0, active = false, tAll = 0;
+
+  function kstDay(){ return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
+  function lookOf(){
+    var M = window.__SV14_MINI;
+    return M ? M.look(me && me.slug) : null;
+  }
+  function setMsg(s){ $('fr-msg').textContent = s; msgT = 6; }
+  function hud(){
+    $('fr-today').textContent = me && me.slug ? today + ' / ' + DAY_MAX : '연습 중';
+    $('fr-nuts').textContent = me && me.slug ? (myNuts == null ? '...' : myNuts + '개') : practice + '개 (저장 안 됨)';
+    var done = me && me.slug && today >= DAY_MAX;
+    $('fr-login').hidden = !!(me && me.slug);
+    $('fr-done').hidden = !done;
+  }
+  async function load(){
+    me = window.__SV14_ME || null;
+    hud();
+    var sb = window.__SV14_SB;
+    if (!sb || !me || !me.slug) { loaded = true; return; }
+    try {
+      var a = await sb.from('members').select('nuts').eq('slug', me.slug).single();
+      var b = await sb.from('nut_log').select('id', { count: 'exact', head: true }).eq('slug', me.slug).eq('t', 'dig').eq('d', kstDay());
+      if (!a.error) myNuts = a.data.nuts;
+      if (!b.error) today = b.count || 0;
+    } catch (e) {}
+    loaded = true;
+    hud();
+  }
+
+  // ---------- 두드리기 ----------
+  function walkTo(x, y){ mini.path = route(mini.x, mini.y, x, y); }
+  function tapTree(t){
+    walkTo(t.x - 14 + (mini.x > t.x ? 28 : 0), t.y + 6);
+    mini.hit = 0.18;
+    t.shake = 0.25;
+    for (var i = 0; i < 3; i++) parts.push({ x: t.x + (Math.random() - 0.5) * 26, y: t.y - 26 + Math.random() * 12, vx: (Math.random() - 0.5) * 30, vy: -10 - Math.random() * 20, life: 0.9, c: Math.random() < 0.5 ? '#5cb04a' : '#8fd36a' });
+    if (t.burrs <= 0) { pops.push({ x: t.x, y: t.y - 42, s: '쉬는 중...', c: '#6a6a5a', life: 0.9 }); return; }
+    if (me && me.slug && today >= DAY_MAX) { pops.push({ x: t.x, y: t.y - 42, s: '오늘은 끝!', c: '#8a5a20', life: 0.9 }); return; }
+    t.hp--;
+    pops.push({ x: t.x + (Math.random() - 0.5) * 10, y: t.y - 40, s: t.hp > 0 ? '툭' : '쿵!', c: t.hp > 0 ? '#3f6a2f' : '#b5651d', life: 0.6 });
+    if (t.hp <= 0) {
+      t.burrs--;
+      resetTree(t);
+      if (t.burrs <= 0) t.rest = 40;
+      var bx = t.x + (Math.random() < 0.5 ? -1 : 1) * (8 + Math.random() * 8);
+      burrs.push({ x: bx, y: t.y - 24, gy: t.y + 4 + Math.random() * 4, vy: 0, hits: 0, open: 0, wob: 0 });
+    }
+  }
+  function tapBurr(b){
+    walkTo(b.x - 12, b.y + 2);
+    mini.hit = 0.18;
+    b.hits++; b.wob = 0.2;
+    pops.push({ x: b.x, y: b.y - 10, s: b.hits < 3 ? '콕' : '쩍!', c: '#3f6a2f', life: 0.6 });
+    if (b.hits >= 3) {
+      b.open = 2.5;
+      nuts.push({ x: b.x + 1, y: b.y, vy: -40, gy: b.y + 2, born: tAll });
+    }
+  }
+  async function tapNut(n){
+    var now = performance.now();
+    if (busy) return;
+    if (now - lastPick < 3000 && me && me.slug) { pops.push({ x: n.x, y: n.y - 10, s: '천천히~', c: '#8a5a20', life: 0.8 }); return; }
+    walkTo(n.x - 12, n.y + 2);
+    if (!me || !me.slug) {
+      practice++;
+      take(n);
+      setMsg('연습으로 주웠어요! 로그인하면 주운 밤이 진짜 내 밤으로 들어가요.');
+      hud();
+      return;
+    }
+    busy = true;
+    var r = null;
+    try { r = await window.__SV14_SB.rpc('dig_nut'); } catch (e) { r = { error: { message: '네트워크 오류예요. 다시 눌러 주세요.' } }; }
+    busy = false;
+    if (r.error) {
+      var m = r.error.message || '';
+      if (m.indexOf('다 주웠') >= 0) { today = DAY_MAX; nuts.splice(nuts.indexOf(n), 1); hud(); }
+      setMsg(m);
+      return;
+    }
+    lastPick = performance.now();
+    take(n);
+    if (r.data) { myNuts = r.data.nuts; today = r.data.today; }
+    setMsg(today >= DAY_MAX ? '🌰 밤 +1! 오늘 몫 5개를 다 주웠어요. 내일 또 와 주세요!' : '🌰 밤 +1! 내 밤에 바로 들어갔어요. (오늘 ' + today + ' / ' + DAY_MAX + ')');
+    hud();
+  }
+  function take(n){
+    var i = nuts.indexOf(n);
+    if (i >= 0) nuts.splice(i, 1);
+    flies.push({ x0: n.x, y0: n.y, t: 0 });
+    pops.push({ x: n.x, y: n.y - 10, s: '+1', c: '#7a4524', life: 0.8 });
+  }
+  function hitTest(x, y){
+    for (var i = nuts.length - 1; i >= 0; i--) { var n = nuts[i]; if (Math.abs(x - n.x) < 12 && Math.abs(y - (n.y - 3)) < 12) return function(){ tapNut(n); }; }
+    for (var j = burrs.length - 1; j >= 0; j--) { var b = burrs[j]; if (!b.open && b.vy === 0 && b.y >= b.gy && Math.abs(x - b.x) < 12 && Math.abs(y - (b.y - 3)) < 12) return function(){ tapBurr(b); }; }
+    var best = null, bd = 1e9;
+    TREES.forEach(function(t){
+      if (x > t.x - 19 && x < t.x + 19 && y > t.y - 46 && y < t.y + 4) { var d = Math.abs(x - t.x) + Math.abs(y - (t.y - 22)); if (d < bd) { bd = d; best = t; } }
+    });
+    if (best) return function(){ tapTree(best); };
+    return null;
+  }
+  cv.addEventListener('pointerdown', function(e){
+    var b = cv.getBoundingClientRect();
+    var x = (e.clientX - b.left) / b.width * W, y = (e.clientY - b.top) / b.height * H;
+    var f = hitTest(x, y);
+    if (f) { e.preventDefault(); f(); return; }
+    if (islandOf(x, y)) walkTo(x, y);
+  });
+
+  // ---------- 움직임 ----------
+  function update(dt){
+    tAll += dt;
+    if (msgT > 0) msgT -= dt;
+    TREES.forEach(function(t){
+      if (t.shake > 0) t.shake -= dt;
+      if (t.rest > 0) { t.rest -= dt; if (t.rest <= 0) { t.burrs = 3; resetTree(t); } }
+    });
+    burrs.forEach(function(b){
+      if (b.y < b.gy) { b.vy += 260 * dt; b.y += b.vy * dt; if (b.y >= b.gy) { b.y = b.gy; b.vy = Math.abs(b.vy) > 40 ? -Math.abs(b.vy) * 0.3 : 0; if (b.vy === 0) b.y = b.gy; } }
+      else if (b.vy < 0) { b.vy += 260 * dt; b.y += b.vy * dt; if (b.y >= b.gy) { b.y = b.gy; b.vy = 0; } }
+      if (b.wob > 0) b.wob -= dt;
+      if (b.open > 0) b.open -= dt;
+    });
+    burrs = burrs.filter(function(b){ return !(b.hits >= 3 && b.open <= 0); });
+    nuts.forEach(function(n){ if (n.vy !== 0 || n.y < n.gy) { n.vy += 240 * dt; n.y += n.vy * dt; if (n.y >= n.gy) { n.y = n.gy; n.vy = 0; } } });
+    parts.forEach(function(p){ p.vy += 60 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; });
+    parts = parts.filter(function(p){ return p.life > 0; });
+    pops.forEach(function(p){ p.y -= 14 * dt; p.life -= dt; });
+    pops = pops.filter(function(p){ return p.life > 0; });
+    flies.forEach(function(f){ f.t += dt / 0.7; });
+    flies = flies.filter(function(f){ if (f.t >= 1) { basketN = Math.min(12, basketN + 1); return false; } return true; });
+    if (mini.hit > 0) mini.hit -= dt;
+    if (mini.path.length) {
+      var p = mini.path[0], dx = p[0] - mini.x, dy = p[1] - mini.y, d = Math.sqrt(dx * dx + dy * dy), sp = 60 * dt;
+      if (Math.abs(dx) > 0.5) mini.dir = dx > 0 ? 1 : -1;
+      if (d <= sp) { mini.x = p[0]; mini.y = p[1]; mini.path.shift(); }
+      else { mini.x += dx / d * sp; mini.y += dy / d * sp; }
+      mini.step += dt;
+    }
+  }
+
+  // ---------- 그리기 ----------
+  function island(s){
+    R(s.x + 2, s.y + s.h, s.w - 4, 6, '#9a6a3a');
+    R(s.x + 4, s.y + s.h + 6, s.w - 8, 2, '#6f4a26');
+    R(s.x, s.y + 2, s.w, s.h - 2, '#7cc45a'); R(s.x + 2, s.y, s.w - 4, 2, '#7cc45a');
+    R(s.x, s.y + s.h - 3, s.w, 3, '#68ad4a');
+    for (var i = 0; i < s.w * s.h / 90; i++) {
+      var gx = s.x + 4 + ((i * 37) % (s.w - 8)), gy = s.y + 4 + ((i * 53) % (s.h - 10));
+      R(gx, gy, 1, 2, '#5ea845'); R(gx + 2, gy + 1, 1, 1, '#5ea845');
+    }
+  }
+  function bridge(b){
+    R(b.x, b.y + b.h, b.w, 2, 'rgba(0,40,80,.25)');
+    R(b.x, b.y, b.w, b.h, '#d9954a');
+    if (b.hz) { for (var x = b.x + 1; x < b.x + b.w; x += 4) R(x, b.y, 1, b.h, '#b5733a'); R(b.x, b.y, b.w, 1, '#8a5428'); R(b.x, b.y + b.h - 1, b.w, 1, '#8a5428'); }
+    else { for (var y = b.y + 1; y < b.y + b.h; y += 4) R(b.x, y, b.w, 1, '#b5733a'); R(b.x, b.y, 1, b.h, '#8a5428'); R(b.x + b.w - 1, b.y, 1, b.h, '#8a5428'); }
+  }
+  function burrSprite(x, y, open, wob){
+    x = Math.round(x + (wob > 0 ? Math.sin(wob * 60) * 1.2 : 0)); y = Math.round(y);
+    if (open) {
+      R(x - 6, y - 3, 4, 4, '#6aa84f'); R(x + 3, y - 3, 4, 4, '#6aa84f');
+      R(x - 6, y - 4, 1, 1, '#3f7a2f'); R(x + 6, y - 4, 1, 1, '#3f7a2f'); R(x - 3, y, 7, 1, '#c9a46a');
+      return;
+    }
+    R(x - 4, y - 7, 9, 8, '#6aa84f'); R(x - 3, y - 6, 3, 2, '#9bd66f');
+    var c = '#3f7a2f';
+    R(x - 6, y - 4, 2, 1, c); R(x + 5, y - 4, 2, 1, c); R(x, y - 9, 1, 2, c); R(x - 5, y - 8, 1, 1, c); R(x + 5, y - 8, 1, 1, c); R(x - 5, y, 1, 1, c); R(x + 5, y, 1, 1, c);
+  }
+  function nutSprite(x, y){
+    x = Math.round(x); y = Math.round(y);
+    R(x - 3, y - 5, 7, 5, '#7a4524'); R(x - 2, y - 7, 5, 2, '#7a4524'); R(x, y - 8, 1, 1, '#4f2a14');
+    R(x - 2, y - 6, 2, 2, '#a86a3a'); R(x - 3, y - 1, 7, 2, '#e2c79a');
+  }
+  function tree(t){
+    var sx = t.shake > 0 ? Math.round(Math.sin(t.shake * 70) * 1.6) : 0, x = t.x, y = t.y;
+    R(x - 12, y, 24, 2, 'rgba(0,0,0,.14)');
+    R(x - 3, y - 14, 6, 15, '#8a5a35'); R(x - 3, y - 14, 2, 15, '#6f4426'); R(x - 5, y - 1, 10, 2, '#7a4b2c');
+    var g1 = t.rest > 0 ? '#4f9a46' : '#3f8f3c', g2 = t.rest > 0 ? '#6fb85e' : '#5cb04a', g3 = '#8fd36a';
+    R(x - 16 + sx, y - 34, 32, 18, g1); R(x - 13 + sx, y - 40, 26, 6, g1); R(x - 8 + sx, y - 44, 16, 4, g1); R(x - 18 + sx, y - 28, 36, 10, g1);
+    R(x - 13 + sx, y - 38, 18, 8, g2); R(x - 15 + sx, y - 30, 10, 6, g2); R(x + 4 + sx, y - 28, 10, 5, g2);
+    R(x - 9 + sx, y - 40, 6, 3, g3); R(x - 12 + sx, y - 32, 3, 2, g3);
+    R(x - 18 + sx, y - 19, 36, 2, '#2f6f2e');
+    var spots = [[-8, -26], [6, -34], [9, -22]];
+    for (var i = 0; i < t.burrs && i < 3; i++) {
+      var bx = x + spots[i][0] + sx, by = y + spots[i][1];
+      R(bx - 2, by - 2, 5, 5, '#a5d65a'); R(bx - 3, by, 1, 1, '#3f7a2f'); R(bx + 3, by, 1, 1, '#3f7a2f'); R(bx, by - 3, 1, 1, '#3f7a2f'); R(bx, by + 3, 1, 1, '#3f7a2f');
+    }
+    if (t.rest > 0 && !reduced) { var zt = (tAll * 0.8) % 1; txt('z', x + 12, y - 44 - zt * 6, 'rgba(60,80,60,' + (1 - zt) + ')', 6); }
+  }
+  function home(){
+    // 오두막
+    var hx = 22, hy = 128;
+    R(hx - 2, hy + 18, 30, 2, 'rgba(0,0,0,.15)');
+    R(hx, hy, 26, 18, '#f2e2c4'); R(hx, hy + 16, 26, 2, '#d8c29c');
+    R(hx - 3, hy - 4, 32, 6, '#d9534f'); R(hx, hy - 8, 26, 4, '#d9534f'); R(hx + 4, hy - 11, 18, 3, '#d9534f'); R(hx - 3, hy + 1, 32, 1, '#a83a36');
+    R(hx + 10, hy + 7, 7, 11, '#8a5a35'); R(hx + 15, hy + 12, 1, 1, '#f2c94c');
+    R(hx + 2, hy + 5, 6, 5, '#9fd6f2'); R(hx + 2, hy + 5, 6, 1, '#6a4e3a'); R(hx + 4, hy + 5, 1, 5, '#6a4e3a');
+    // 바구니
+    var bx = 58, by = 160;
+    R(bx - 9, by + 1, 20, 2, 'rgba(0,0,0,.15)');
+    R(bx - 8, by - 8, 18, 9, '#c98a4a'); R(bx - 8, by - 8, 18, 1, '#8a5428');
+    for (var k = 0; k < 4; k++) R(bx - 7 + k * 5, by - 7, 1, 8, '#a86a32');
+    R(bx - 6, by - 15, 1, 7, '#8a5428'); R(bx + 7, by - 15, 1, 7, '#8a5428'); R(bx - 6, by - 16, 14, 1, '#8a5428');
+    for (var n = 0; n < Math.min(basketN, 8); n++) { var nx = bx - 5 + (n % 4) * 4, ny = by - 8 - Math.floor(n / 4) * 2; R(nx, ny - 2, 3, 3, '#7a4524'); R(nx, ny - 2, 1, 1, '#a86a3a'); }
+    // 팻말
+    var px = 70, py = 112;
+    R(px, py, 1, 12, '#6f4426'); R(px - 9, py - 6, 19, 8, '#e0b072'); R(px - 9, py - 6, 19, 1, '#8a5428');
+    txt('밤숲 →', px + 0.5, py - 2, '#5a3618', 4.6);
+  }
+  function pond(){
+    var s = ISL[2];
+    R(s.x + 46, s.y + 14, 34, 18, '#5fb3e6'); R(s.x + 48, s.y + 12, 30, 2, '#5fb3e6'); R(s.x + 48, s.y + 32, 30, 2, '#5fb3e6');
+    R(s.x + 52, s.y + 18, 8, 1, '#bfe6ff'); R(s.x + 64, s.y + 25, 6, 1, '#bfe6ff');
+    [[12, 12, '#ff8fb0'], [22, 34, '#f5d000'], [32, 20, '#ffffff'], [14, 40, '#ff8fb0'], [86, 40, '#f5d000']].forEach(function(f){
+      var fx = s.x + f[0], fy = s.y + f[1];
+      R(fx, fy + 2, 1, 3, '#3f8f3c'); R(fx - 1, fy, 3, 3, f[2]); R(fx, fy + 1, 1, 1, '#f2a33a');
+    });
+    // 다람쥐 친구
+    var qx = s.x + 28, qy = s.y + 32, bob = reduced ? 0 : Math.round(Math.abs(Math.sin(tAll * 3)) * 1.5);
+    R(qx - 5, qy, 12, 2, 'rgba(0,0,0,.14)');
+    R(qx + 3, qy - 12 - bob, 5, 10, '#b5733a'); R(qx + 4, qy - 14 - bob, 4, 3, '#c98a4a');
+    R(qx - 4, qy - 8 - bob, 8, 8, '#c98a4a'); R(qx - 3, qy - 13 - bob, 6, 6, '#c98a4a');
+    R(qx - 3, qy - 15 - bob, 2, 2, '#b5733a'); R(qx + 1, qy - 15 - bob, 2, 2, '#b5733a');
+    R(qx - 2, qy - 11 - bob, 1, 1, '#1d1b1b'); R(qx + 1, qy - 11 - bob, 1, 1, '#1d1b1b');
+    R(qx - 2, qy - 5 - bob, 4, 4, '#f2dcb4');
+    nutSprite(qx - 4, qy - 3 - bob);
+  }
+  function water(){
+    R(0, 0, W, H, '#4fa3e0');
+    var off = reduced ? 0 : Math.floor(tAll * 6) % 16;
+    for (var y = 6; y < H; y += 14) for (var x = ((y / 14) % 2) * 8 - off; x < W; x += 16) R(x, y, 5, 1, '#78bdee');
+  }
+  function islet(){
+    var s = { x: 14, y: 16, w: 52, h: 36 };
+    island(s);
+    [[24, 30], [52, 26], [36, 44]].forEach(function(b){ R(b[0] - 6, b[1] - 4, 12, 6, '#3f8f3c'); R(b[0] - 4, b[1] - 6, 8, 3, '#5cb04a'); R(b[0] - 2, b[1] - 5, 3, 1, '#8fd36a'); });
+    R(44, 40, 8, 5, '#9aa3a8'); R(45, 39, 5, 1, '#b8c0c4'); R(44, 44, 8, 1, '#7a8288');
+    // 작은 배
+    var by = 78 + (reduced ? 0 : Math.round(Math.sin(tAll * 1.6) * 1));
+    R(30, by + 6, 22, 2, 'rgba(0,40,80,.25)');
+    R(28, by, 24, 5, '#b5733a'); R(30, by + 5, 20, 1, '#8a5428'); R(28, by, 24, 1, '#d9954a');
+    R(39, by - 14, 1, 14, '#6f4426'); R(40, by - 13, 9, 9, '#fffbe9'); R(40, by - 13, 9, 1, '#e0d6bf');
+  }
+  function draw(){
+    water();
+    islet();
+    ISL.forEach(island);
+    BRIDGE.forEach(bridge);
+    home(); pond();
+    var list = [];
+    TREES.forEach(function(t){ list.push({ y: t.y, f: function(){ tree(t); } }); });
+    burrs.forEach(function(b){ list.push({ y: b.y, f: function(){ burrSprite(b.x, b.y, b.hits >= 3, b.wob); if (b.hits >= 3 && b.open > 1.8) { R(b.x - 1, b.y - 12, 2, 2, '#fff6b0'); } } }); });
+    nuts.forEach(function(n){ list.push({ y: n.y, f: function(){
+      nutSprite(n.x, n.y);
+      if (!reduced && n.vy === 0) { var a = 0.5 + 0.5 * Math.sin((tAll - n.born) * 6); R(n.x - 1, n.y - 13 - a * 2, 3, 3, 'rgba(255,240,150,' + (0.5 + a * 0.5) + ')'); }
+    } }); });
+    list.push({ y: mini.y, f: function(){
+      var M = window.__SV14_MINI, lk = lookOf();
+      var lift = mini.hit > 0 ? -2 : 0;
+      if (M && lk) M.draw(R, Math.round(mini.x - 8), Math.round(mini.y) + lift, lk, { flip: mini.dir < 0, stride: mini.path.length > 0 && Math.floor(mini.step * 8) % 2 === 1 });
+      else { R(mini.x - 4, mini.y - 12, 8, 12, '#f2a33a'); }
+      if (mini.hit > 0) { var hx = mini.x + mini.dir * 9; R(hx - 1, mini.y - 18, 2, 8, '#8a5a35'); R(hx - 2, mini.y - 20, 4, 3, '#b5733a'); }
+    } });
+    list.sort(function(a, b){ return a.y - b.y; });
+    list.forEach(function(o){ o.f(); });
+    parts.forEach(function(p){ R(p.x, p.y, 2, 2, p.c); });
+    flies.forEach(function(f){
+      var tt = Math.min(1, f.t), x = f.x0 + (58 - f.x0) * tt, y = f.y0 + (152 - f.y0) * tt - Math.sin(tt * Math.PI) * 30;
+      nutSprite(x, y);
+    });
+    pops.forEach(function(p){ cx.globalAlpha = Math.max(0, Math.min(1, p.life * 2)); txt(p.s, p.x, p.y, p.c, 6.5); cx.globalAlpha = 1; });
+  }
+  function loop(ts){
+    raf = 0;
+    if (!active) return;
+    var dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts;
+    update(dt); draw();
+    raf = requestAnimationFrame(loop);
+  }
+  function enter(){
+    active = true;
+    load();
+    if (!raf) { last = performance.now(); raf = requestAnimationFrame(loop); }
+  }
+  function leave(){ active = false; if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+  $('fr-login-btn').addEventListener('click', function(){ if (window.__SV14_OPEN_AUTH) window.__SV14_OPEN_AUTH(); });
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+    else if (active && !raf) { last = performance.now(); raf = requestAnimationFrame(loop); }
+  });
+  draw();
+  window.__SV14_FOREST = { enter: enter, leave: leave };
+})();
+</script>
+</div>
+
 <div id="view-game" hidden>
   <div class="wrap game-page">
     <div class="room-top">
@@ -2547,6 +2942,7 @@ window.__SV14_BOOT = function(){
   var BY_SLUG = {};
   MEMBERS.forEach(function(m){ BY_SLUG[m.slug] = m; });
   window.__SV14_MEMBERS = MEMBERS;
+  window.__SV14_MINI = { draw: function(r, x, yb, room, opts){ drawMini(r, x, yb, room, opts); }, look: function(slug){ return slug && BY_SLUG[slug] ? BY_SLUG[slug].room : Object.assign({}, defaultRoom(0), { kind: 'chick', hold: 'none' }); } };
   var STATUS = { alive: ['생존 중', 'alive'], afk: ['잠수', 'afk'], back: ['복귀', 'back'] };
 
   function pad2(n){ return (n < 10 ? '0' : '') + n; }
@@ -3645,7 +4041,7 @@ window.__SV14_BOOT = function(){
     log.textContent = '';
     if (!nz.log.length) log.appendChild(el('li', 'gb-empty', '아직 밤 기록이 없어요. 출석체크하면 여기에 쌓여요.'));
     nz.log.slice(-10).reverse().forEach(function(g){
-      var txt = g.t === 'check' ? '출석체크 +' + g.n : g.t === 'in' ? nameOf(g.from) + ' → 선물 +' + g.n : g.t === 'shop' ? '밤 상점 ' + (g.item || '') + ' −' + g.n : nameOf(g.to) + '에게 선물 −' + g.n;
+      var txt = g.t === 'check' ? '출석체크 +' + g.n : g.t === 'dig' ? '밤 줍기 +' + g.n : g.t === 'in' ? nameOf(g.from) + ' → 선물 +' + g.n : g.t === 'shop' ? '밤 상점 ' + (g.item || '') + ' −' + g.n : nameOf(g.to) + '에게 선물 −' + g.n;
       log.appendChild(el('li', 'nut-entry', g.d + ' · ' + txt));
     });
   }
@@ -3710,6 +4106,8 @@ window.__SV14_BOOT = function(){
   var gameView = document.getElementById('view-game');
   var gjView = document.getElementById('view-gj');
   var drawView = document.getElementById('view-draw');
+  var forestView = document.getElementById('view-forest');
+  function leaveForest(){ forestView.hidden = true; if (window.__SV14_FOREST) window.__SV14_FOREST.leave(); }
   function leaveDraw(){ drawView.hidden = true; if (window.__SV14_DRAW) window.__SV14_DRAW.leave(); }
   var GAMES = (function(){
     var gc = document.getElementById('game-canvas');
@@ -5493,6 +5891,15 @@ window.__SV14_BOOT = function(){
       da.appendChild(db);
       da.appendChild(el('span', 'gt-go', '하러 가기 →'));
       box.appendChild(da);
+      var fa = el('a', 'game-tile'); fa.href = '#forest';
+      fa.appendChild(el('span', 'gt-icon', '🌰'));
+      var fb = el('span', 'gt-body');
+      fb.appendChild(el('b', null, '밤 줍기'));
+      fb.appendChild(el('span', 'gt-desc', '섬 마을 밤나무를 톡톡 두드려 밤송이를 떨어뜨리고, 까서 밤을 주워요. 주운 밤은 진짜 내 밤이 돼요!'));
+      fb.appendChild(el('span', 'gt-top', '🌰 하루 5개까지 · 진짜 밤'));
+      fa.appendChild(fb);
+      fa.appendChild(el('span', 'gt-go', '하러 가기 →'));
+      box.appendChild(fa);
       var sb = window.__SV14_SB;
       if (!sb) return;
       petG.hubInfo(document.getElementById('gt-top-pet'));
@@ -5510,6 +5917,7 @@ window.__SV14_BOOT = function(){
     var sw = document.getElementById('game-switch');
     LIST.forEach(function(g){ var a = el('a', null, g.icon + ' ' + g.title); a.href = '#game-' + g.id; a.setAttribute('data-game', g.id); sw.appendChild(a); });
     (function(){ var a = el('a', null, '🎨 그림 맞히기'); a.href = '#draw'; sw.appendChild(a); })();
+    (function(){ var a = el('a', null, '🌰 밤 줍기'); a.href = '#forest'; sw.appendChild(a); })();
     function open(id){
       var g = BY[id];
       if (!g) return;
@@ -6158,6 +6566,7 @@ window.__SV14_BOOT = function(){
     gameView.hidden = true;
     gjView.hidden = true;
     leaveDraw();
+    leaveForest();
     roomView.hidden = false;
     document.getElementById('room-owner').textContent = m.name;
     document.getElementById('p-name').textContent = m.name;
@@ -6192,6 +6601,7 @@ window.__SV14_BOOT = function(){
     roomView.hidden = true;
     gjView.hidden = true;
     leaveDraw();
+    leaveForest();
     gameView.hidden = false;
     GAMES.open(id);
     window.scrollTo(0, 0);
@@ -6201,6 +6611,7 @@ window.__SV14_BOOT = function(){
     gameView.hidden = true;
     gjView.hidden = true;
     leaveDraw();
+    leaveForest();
     homeView.hidden = false;
     GAMES.hub();
     if (hash) {
@@ -6214,6 +6625,7 @@ window.__SV14_BOOT = function(){
     roomView.hidden = true;
     gameView.hidden = true;
     leaveDraw();
+    leaveForest();
     gjView.hidden = false;
     window.scrollTo(0, 0);
     if (window.__SV14_GJ) window.__SV14_GJ.show();
@@ -6223,14 +6635,26 @@ window.__SV14_BOOT = function(){
     roomView.hidden = true;
     gameView.hidden = true;
     gjView.hidden = true;
+    leaveForest();
     drawView.hidden = false;
     window.scrollTo(0, 0);
     if (window.__SV14_DRAW) window.__SV14_DRAW.enter();
+  }
+  function showForest(){
+    homeView.hidden = true;
+    roomView.hidden = true;
+    gameView.hidden = true;
+    gjView.hidden = true;
+    leaveDraw();
+    forestView.hidden = false;
+    window.scrollTo(0, 0);
+    if (window.__SV14_FOREST) window.__SV14_FOREST.enter();
   }
   function route(){
     var h = location.hash.replace(/^#/, '');
     if (h === 'gj') { showGJ(); return; }
     if (h === 'draw') { showDraw(); return; }
+    if (h === 'forest') { showForest(); return; }
     var m = h.match(/^room-([a-z0-9-]+)$/), gm = h.match(/^game-([a-z]+)$/);
     if (gm && GAMES.has(gm[1])) showGame(gm[1]);
     else if (m && BY_SLUG[m[1]]) showRoom(BY_SLUG[m[1]]);
