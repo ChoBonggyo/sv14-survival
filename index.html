@@ -367,6 +367,13 @@ textarea{font:.85rem/1.55 var(--mono);resize:vertical}
 .pet-world canvas:active{cursor:grabbing}
 .pw-hint{position:absolute;left:10px;top:10px;margin:0;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.88);font-size:.82rem;font-weight:700;color:#3a4a2a;max-width:calc(100% - 80px);line-height:1.5}
 .pw-hint:empty{display:none}
+@media (max-width:640px){
+.pet-world{display:flex;flex-direction:column}
+.pet-world canvas{order:1}
+.pw-hint{order:2;position:static;max-width:none;border-radius:0;background:#fffbe9;border-top:2px solid var(--hp-line);font-size:.8rem;padding:7px 10px}
+.pw-tools{top:8px;right:8px;grid-auto-flow:column;gap:5px}
+.pw-tools button{width:34px;height:34px;font-size:1rem;background:rgba(255,255,255,.8)}
+}
 .pw-tools{position:absolute;right:10px;top:10px;display:grid;gap:6px}
 .pw-tools button{width:44px;height:44px;border-radius:10px;font-size:1.15rem;font-weight:800;background:rgba(255,255,255,.92);border:1px solid #c9bfa5;padding:0;color:#3a4a2a}
 .pet-shop,.pet-deco{display:grid;gap:8px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
