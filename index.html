@@ -2383,12 +2383,14 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   }
   function hurtMe(fromX, fromY){
     if (inv > 0) return;
+    var goal = mini.path.length ? mini.path[mini.path.length - 1] : null;
     hp--; inv = 1.2;
     pops.push({ x: mini.x, y: mini.y - 22, s: '아야!', c: '#c0392b', life: 0.8 });
     var dx = mini.x - fromX, dy = mini.y - fromY, d = Math.hypot(dx, dy) || 1;
     for (var k = 0; k < 6; k++) { var nx = mini.x + dx / d * 2, ny = mini.y + dy / d * 2; if (walkable(nx, ny)) { mini.x = nx; mini.y = ny; } }
-    mini.path = [];
+    mini.path = goal ? findPath(mini.x, mini.y, goal[0], goal[1]) : [];
     if (hp <= 0) {
+      mini.path = [];
       var m = members()[curLand];
       setMsg('💫 졸병들한테 쫓겨났어요! 밤섬에서 다시 시작해요.' + (m ? ' (' + m.name + ': "거봐요, 내 땅이라니까요~")' : ''));
       mini.x = HOME[0]; mini.y = HOME[1]; hp = HPMAX; inv = 1.5; mobs = []; curLand = -1;
@@ -2635,13 +2637,15 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   });
   function typing(){ var a = document.activeElement; return a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable); }
   var KEYMAP = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd', a: 'l', d: 'r', w: 'u', s: 'd', A: 'l', D: 'r', W: 'u', S: 'd' };
+  var CODEMAP = { KeyA: 'l', KeyD: 'r', KeyW: 'u', KeyS: 'd' };
+  function dirOf(e){ return KEYMAP[e.key] || CODEMAP[e.code]; }
   window.addEventListener('keydown', function(e){
     if (!active || typing() || e.ctrlKey || e.metaKey || e.altKey) return;
     if (document.querySelector('.np-back')) return;
-    if (KEYMAP[e.key]) { keys[KEYMAP[e.key]] = true; mini.path = []; e.preventDefault(); }
+    if (dirOf(e)) { keys[dirOf(e)] = true; mini.path = []; e.preventDefault(); }
     else if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); if (!e.repeat) swing(); }
   });
-  window.addEventListener('keyup', function(e){ if (KEYMAP[e.key]) keys[KEYMAP[e.key]] = false; });
+  window.addEventListener('keyup', function(e){ if (dirOf(e)) keys[dirOf(e)] = false; });
   window.addEventListener('blur', function(){ keys = {}; });
   // 휴대폰용 방향 단추 + 때리기 단추
   (function(){
@@ -2683,9 +2687,9 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
     if (kx || ky) {
       var len = Math.sqrt(kx * kx + ky * ky), mx = kx / len * sp, my = ky / len * sp;
       if (walkable(mini.x + mx, mini.y)) { mini.x += mx; moved = true; }
-      else if (mx && !my) { for (var ny0 = 1; ny0 <= 10; ny0++) { if (walkable(mini.x + mx, mini.y - ny0)) { if (walkable(mini.x, mini.y - Math.min(sp, ny0))) { mini.y -= Math.min(sp, ny0); moved = true; } break; } if (walkable(mini.x + mx, mini.y + ny0)) { if (walkable(mini.x, mini.y + Math.min(sp, ny0))) { mini.y += Math.min(sp, ny0); moved = true; } break; } } }
+      else if (mx && !my) { for (var ny0 = 1; ny0 <= 32; ny0++) { if (walkable(mini.x + mx, mini.y - ny0)) { if (walkable(mini.x, mini.y - Math.min(sp, ny0))) { mini.y -= Math.min(sp, ny0); moved = true; } break; } if (walkable(mini.x + mx, mini.y + ny0)) { if (walkable(mini.x, mini.y + Math.min(sp, ny0))) { mini.y += Math.min(sp, ny0); moved = true; } break; } } }
       if (walkable(mini.x, mini.y + my)) { mini.y += my; moved = true; }
-      else if (my && !mx) { for (var nx0 = 1; nx0 <= 10; nx0++) { if (walkable(mini.x - nx0, mini.y + my)) { if (walkable(mini.x - Math.min(sp, nx0), mini.y)) { mini.x -= Math.min(sp, nx0); moved = true; } break; } if (walkable(mini.x + nx0, mini.y + my)) { if (walkable(mini.x + Math.min(sp, nx0), mini.y)) { mini.x += Math.min(sp, nx0); moved = true; } break; } } }
+      else if (my && !mx) { for (var nx0 = 1; nx0 <= 32; nx0++) { if (walkable(mini.x - nx0, mini.y + my)) { if (walkable(mini.x - Math.min(sp, nx0), mini.y)) { mini.x -= Math.min(sp, nx0); moved = true; } break; } if (walkable(mini.x + nx0, mini.y + my)) { if (walkable(mini.x + Math.min(sp, nx0), mini.y)) { mini.x += Math.min(sp, nx0); moved = true; } break; } } }
       mini.fx = kx; mini.fy = ky;
       if (kx) mini.dir = kx;
     } else if (mini.path.length) {
