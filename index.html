@@ -2207,7 +2207,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
         <li><b>밤 줍기</b> · 반짝이는 밤 옆에서 스페이스바(또는 톡)! 바구니로 쏙, 내 밤 +1</li>
         <li><b>놀러 가기</b> · 다리를 건너 형님 집 앞에 가면 미니홈피 구경 단추가 나와요.</li>
       </ol>
-      <p class="dr-note">한 형님이 하루에 5개까지 주울 수 있어요(밤 날짜는 한국 시간 자정에 바뀌어요). 열매를 다 떨군 나무는 잠깐 쉬었다가 다시 열려요.</p>
+      <p class="dr-note">한 형님이 하루에 5개까지 주울 수 있어요(밤 날짜는 한국 시간 자정에 바뀌어요). 열매를 다 떨군 나무는 잠깐 쉬었다가 다시 열려요. <span style="opacity:.6">(밤 줍기 버전 1109)</span></p>
     </div>
   </div>
 <script>
@@ -2308,6 +2308,15 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   function findPath(fx, fy, tx, ty){
     if (!GRID) grid();
     var s = Math.floor(fy / G) * GW + Math.floor(fx / G);
+    if (!GRID[s]) {
+      var sb = 1e9, sc = -1, sx1 = Math.floor(fx / G), sy1 = Math.floor(fy / G);
+      for (var ay = -5; ay <= 5; ay++) for (var ax = -5; ax <= 5; ax++) {
+        var ncx = sx1 + ax, ncy = sy1 + ay;
+        if (ncx < 0 || ncy < 0 || ncx >= GW || ncy >= GH || !GRID[ncy * GW + ncx]) continue;
+        var ad = ax * ax + ay * ay; if (ad < sb) { sb = ad; sc = ncy * GW + ncx; }
+      }
+      if (sc >= 0) s = sc;
+    }
     var goal = -1, bd = 1e9, gx0 = Math.floor(tx / G), gy0 = Math.floor(ty / G);
     for (var dy = -12; dy <= 12; dy++) for (var dx = -12; dx <= 12; dx++) {
       var gx = gx0 + dx, gy = gy0 + dy;
@@ -2898,8 +2907,9 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
   function loop(ts){
     raf = 0;
     if (!active) return;
-    var dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts;
-    update(dt); draw();
+    var dt = Math.min(0.5, (ts - last) / 1000 || 0); last = ts;
+    while (dt > 0) { var st = Math.min(dt, 1 / 30); update(st); dt -= st; }
+    draw();
     raf = requestAnimationFrame(loop);
   }
   function enter(){
