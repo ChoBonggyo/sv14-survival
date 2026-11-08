@@ -1402,7 +1402,7 @@ legend{font-size:.8rem;font-weight:700;color:var(--muted);padding:0 6px}
           <p class="cz-hint">여기 적은 프로필은 회원가입해서 자기 방을 가진 형님들만 볼 수 있어요. 로그인 안 한 방문자에게는 안 보여요.</p>
           <div class="cz-two">
             <label for="cz-phone">전화번호<input type="tel" id="cz-phone" name="phone" maxlength="20" autocomplete="off" placeholder="010-0000-0000"></label>
-            <label for="cz-birth">생일<input type="text" id="cz-birth" name="birth" maxlength="14" autocomplete="off" placeholder="예: 3월 14일"></label>
+            <label for="cz-birth">생일<input type="text" id="cz-birth" name="birth" maxlength="14" autocomplete="off" placeholder="예: 3월 14일"><small id="cz-birth-note" style="font-weight:500;color:var(--muted)"></small></label>
             <label for="cz-nick">게임 닉네임<input type="text" id="cz-nick" name="nick" maxlength="20" autocomplete="off" placeholder="14서버에서 쓰는 이름"></label>
           </div>
           <label for="cz-intro">자기소개 한 줄<input type="text" id="cz-intro" name="intro" maxlength="60" autocomplete="off" placeholder="60자까지"></label>
@@ -3306,6 +3306,34 @@ window.__SV14_BOOT = function(){
   // 저장된 꾸미기 데이터는 room-data 블록(JSON)에 들어 있습니다. "확인" 버튼이 이 블록을 갱신한 새 버전을 저장합니다.
   var CUSTOM = window.__SV14_DATA || {};
 
+  // 프로필 '생일' 글자에서 월·일을 알아냄. 예: 3월 14일 / 1985.3.14 / 85-03-14 / 3/14 / 0314
+  function parseBirth(v){
+    var s = String(v == null ? '' : v).trim();
+    if (!s) return null;
+    if (s.indexOf('음력') >= 0) return { lunar: true };
+    s = s.replace(/양력|생일|[()]/g, ' ').trim();
+    var m;
+    if (!(m = s.match(/(\d{1,2})\s*월\s*(\d{1,2})/)) &&
+        !(m = s.match(/(?:^|\D)(?:19|20)\d{2}\s*[.\-\/년\s]\s*(\d{1,2})\s*[.\-\/\s]\s*(\d{1,2})/)) &&
+        !(m = s.match(/^\d{2}\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})\.?$/)) &&
+        !(m = s.match(/^(\d{1,2})\s*[.\-\/\s]\s*(\d{1,2})\.?$/)) &&
+        !(m = s.match(/^(?:19|20)\d{2}(\d{2})(\d{2})$/)) &&
+        !(m = s.match(/^\d{2}(\d{2})(\d{2})$/)) &&
+        !(m = s.match(/^(\d{2})(\d{2})$/))) return null;
+    var mo = +m[1], da = +m[2], max = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1];
+    if (!max || da < 1 || da > max) return null;
+    return { mo: mo, da: da, md: (mo < 10 ? '0' : '') + mo + '-' + (da < 10 ? '0' : '') + da };
+  }
+  function syncBirthNote(){
+    var el2 = document.getElementById('cz-birth-note');
+    if (!el2) return;
+    var v = document.getElementById('cz-birth').value.trim(), b = parseBirth(v);
+    el2.textContent = !v ? '적어 두면 생일날 전국 지도에서 파티가 열려요.'
+      : b && b.lunar ? '음력은 해마다 날짜가 달라서 자동 파티가 안 열려요. 양력으로 적어 주세요.'
+      : b ? '🎂 ' + b.mo + '월 ' + b.da + '일에 전국 지도에서 생일 파티가 열려요!'
+      : '날짜를 못 알아들었어요. "3월 14일"처럼 적어 주세요.';
+  }
+  document.getElementById('cz-birth').addEventListener('input', syncBirthNote);
   var PROFILE_FIELDS = [['phone', '전화'], ['birth', '생일'], ['nick', '게임 닉'], ['intro', '소개']];
   function cleanProfile(p){
     var o = {};
@@ -4211,6 +4239,7 @@ window.__SV14_BOOT = function(){
     document.getElementById('cz-region').value = p.region || '';
     document.getElementById('cz-note').value = p.note || '';
     PROFILE_FIELDS.forEach(function(f){ document.getElementById('cz-' + f[0]).value = pPreview[f[0]] || ''; });
+    syncBirthNote();
   }
   function readControls(){
     function one(name){ var c = form.querySelector('input[name="' + name + '"]:checked'); return c ? c.value : null; }
@@ -6615,13 +6644,24 @@ window.__SV14_BOOT = function(){
     return w;
   }
   var walkers = MEMBERS.map(makeWalker);
-  // 임사장님 늦은 생일 파티: 한국 시간 2026-11-09 하루만. 자정이 지나면 저절로 끝나요.
-  var PARTY_DAY = '2026-11-09', PARTY_SLUG = 'limsajang', partyOn = false;
-  var partyC = CITY['부산'].p, PARTY_RX = 54, PARTY_RY = 42, PARTY_SEC = 48;
-  var PARTY_LINES = ['임사장님 생신 축하드려요!', '늦었지만 축하해요~ 🎉', '생일 축하합니다~ 🎵', '건강하세요 임사장님!', '케이크 한 입만요!', '늦어서 죄송해요 ㅠㅠ'];
+  // 생일 파티: 프로필에 생일을 적은 형님의 생일날(한국 시간) 하루 동안, 그 형님이 사는 도시에서 열려요.
+  // 프로필은 가입한 형님만 볼 수 있어서 파티도 로그인한 형님 화면에 나타나요.
+  var LATE_PARTY = { '2026-11-09': 'limsajang' };
+  var partyOn = false, partyDay = '', partyHosts = [], partyLate = false, partyNames = [], partyText = '';
+  var partyC = CITY['대전'].p, PARTY_RX = 54, PARTY_RY = 42, PARTY_SEC = 48;
   function kstToday(){ return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
+  function isHost(w){ return partyHosts.indexOf(w.m.slug) >= 0; }
+  function honor(n){ return /님$/.test(n) ? n : n + '님'; }
+  function hostsFor(day){
+    var md = day.slice(5), y = +day.slice(0, 4), leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+    return MEMBERS.filter(function(m){
+      var b = parseBirth(m.profile && m.profile.birth);
+      if (!b || b.lunar) return false;
+      return b.md === md || (b.md === '02-29' && !leap && md === '02-28');
+    }).map(function(m){ return m.slug; });
+  }
   function partyPlace(){
-    var guests = walkers.filter(function(w){ return w.m.slug !== PARTY_SLUG; });
+    var guests = walkers.filter(function(w){ return !isHost(w); });
     var th0 = Date.now() / 1000 * Math.PI * 2 / PARTY_SEC;
     guests.forEach(function(w, i){
       var a = th0 + i / guests.length * Math.PI * 2;
@@ -6629,25 +6669,41 @@ window.__SV14_BOOT = function(){
       if (Math.abs(tx - w.x) > 0.01 && Math.abs(tx - w.x) < 4) w.dir = tx < w.x ? -1 : 1;
       w.x = tx; w.y = ty; w.state = 'walk'; w.mode = 'walk'; w.legs = []; w.step++;
     });
-    walkers.forEach(function(w){
-      if (w.m.slug !== PARTY_SLUG) return;
-      w.x = partyC.x - 8; w.y = partyC.y; w.state = 'idle'; w.mode = 'walk'; w.legs = []; w.t = 99;
+    var hosts = walkers.filter(isHost);
+    hosts.forEach(function(w, i){
+      w.x = partyC.x - 8 + (i - (hosts.length - 1) / 2) * 20; w.y = partyC.y; w.state = 'idle'; w.mode = 'walk'; w.legs = []; w.t = 99;
       w.dir = Math.floor(Date.now() / 1500) % 2 ? 1 : -1;
     });
   }
   function syncParty(){
-    var on = kstToday() === PARTY_DAY;
-    if (on === partyOn) return;
-    partyOn = on;
-    if (on) partyPlace();
-    else { walkers = MEMBERS.map(makeWalker); hoverW = null; }
+    var day = kstToday();
+    if (day === partyDay) return;
+    partyDay = day;
+    var late = LATE_PARTY[day], hs = hostsFor(day);
+    if (late && hs.indexOf(late) < 0) hs.unshift(late);
+    var was = partyOn;
+    partyOn = hs.length > 0;
+    if (was || partyOn) { walkers = MEMBERS.map(makeWalker); hoverW = null; }
+    if (!partyOn) { partyHosts = []; return; }
+    partyHosts = hs; partyLate = !!late;
+    var ms = hs.map(function(sl){ return BY_SLUG[sl]; }).filter(Boolean);
+    partyNames = ms.map(function(m){ return honor(m.name); });
+    partyText = (late ? '늦었지만 ' : '') + partyNames.join(' · ') + ' 생신축하 파티!';
+    var home = null;
+    ms.forEach(function(m){ if (!home) home = cityFor(m.room.region); });
+    partyC = home ? home.p : CITY['대전'].p;
+    partyPlace();
   }
   function partyLine(w){
-    if (w.m.slug === PARTY_SLUG) return '고마워요 형님들! 🎂';
-    return PARTY_LINES[(w.m.no + Math.floor((Date.now() + w.phase) / BUBBLE_PERIOD)) % PARTY_LINES.length];
+    if (isHost(w)) return '고마워요 형님들! 🎂';
+    var N = partyNames[w.m.no % partyNames.length];
+    var L = partyLate
+      ? [N + ' 생신 축하드려요!', '늦었지만 축하해요~ 🎉', '생일 축하합니다~ 🎵', '건강하세요 ' + N + '!', '케이크 한 입만요!', '늦어서 죄송해요 ㅠㅠ']
+      : [N + ' 생신 축하드려요!', '생일 축하해요~ 🎉', '생일 축하합니다~ 🎵', '건강하세요 ' + N + '!', '케이크 한 입만요!', '오늘 주인공은 ' + N + '!'];
+    return L[(w.m.no + Math.floor((Date.now() + w.phase) / BUBBLE_PERIOD)) % L.length];
   }
   function partyCake(r){
-    var x = Math.round(partyC.x) + 11, y = Math.round(partyC.y) + 7;
+    var x = Math.round(partyC.x) + 11 + (partyHosts.length - 1) * 10, y = Math.round(partyC.y) + 7;
     r(x - 1, y + 1, 18, 2, 'rgba(0,0,0,.16)');
     r(x - 1, y, 18, 1, '#ffffff');
     r(x, y - 7, 16, 7, '#f7c9d8'); r(x, y - 2, 16, 2, '#e9a8bf');
@@ -6668,10 +6724,12 @@ window.__SV14_BOOT = function(){
     }
   }
   function partyBanner(ctx){
-    var text = '늦었지만 임사장님 생신축하 파티!', CW = plazaCanvas.width, CH = plazaCanvas.height;
+    var text = partyText, CW = plazaCanvas.width, CH = plazaCanvas.height, fs = 25;
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.font = 'bold 25px "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+    function setFs(){ ctx.font = 'bold ' + fs + 'px "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'; }
+    setFs();
+    while (fs > 12 && ctx.measureText(text).width + 56 > CW - 36) { fs--; setFs(); }
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     var bw = Math.ceil(ctx.measureText(text).width) + 56, bh = 50;
     var mid = Math.max(bw / 2 + 8, Math.min(CW - bw / 2 - 8, SX(partyC.x)));
@@ -6805,7 +6863,7 @@ window.__SV14_BOOT = function(){
     });
     ctx.textAlign = 'center';
     sorted.forEach(function(w){
-      if (partyOn && view.z < 2 && w.m.slug !== PARTY_SLUG) return;
+      if (partyOn && view.z < 2 && !isHost(w)) return;
       var name = w.m.name;
       var cx = SX(Math.round(w.x) + 8), cy = SY(Math.round(w.y) - w.h - (w.lift || 0)) - 8;
       var tw = Math.ceil(ctx.measureText(name).width) + 8;
@@ -6818,7 +6876,7 @@ window.__SV14_BOOT = function(){
     sorted.forEach(function(w){
       var note = partyOn ? partyLine(w) : w.m.room.note;
       if (!note) return;
-      if (partyOn && view.z < 2 && w.m.slug !== PARTY_SLUG && w.m.no % 3) return;
+      if (partyOn && view.z < 2 && !isHost(w) && w.m.no % 3) return;
       var t = (now + w.phase) % BUBBLE_PERIOD;
       var hover = hoverW === w, show = partyOn ? 2400 : BUBBLE_SHOW;
       if (!hover && t >= show) return;
